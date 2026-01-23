@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { login } from "../api/authApi";
+import { Link } from "react-router-dom";
 import "./LoginPage.css"; // We'll create this CSS file
 
 export default function LoginPage() {
@@ -65,7 +66,7 @@ export default function LoginPage() {
         </button>
 
         <p className="login-footer">
-          Don't have an account? <a href="/register">Register</a>
+          Don't have an account? <Link to="/register">Register</Link>
         </p>
       </form>
     </div>
