@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { register } from "../api/authApi";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./RegisterPage.css";
 
 export default function RegisterPage() {
@@ -10,6 +10,8 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const navigate = useNavigate(); // for redirect after registration
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,14 +29,11 @@ export default function RegisterPage() {
     }
 
     try {
-      const result = await register({ username, email, password });
-      setSuccess("Registration successful! You can now log in.");
-      setUsername("");
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
+      await register({ username, email, password });
+      setSuccess("Registration successful! Redirecting to login...");
+      setTimeout(() => navigate("/login"), 2000); // redirect after 2s
     } catch (err) {
-      setError(err?.response?.data?.message || "Registration failed");
+      setError(err?.message || "Registration failed");
     }
   };
 

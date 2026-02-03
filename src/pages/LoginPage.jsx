@@ -1,31 +1,48 @@
 import { useState } from "react";
-import { login } from "../api/authApi";
-import { Link } from "react-router-dom";
-import "./LoginPage.css"; // We'll create this CSS file
+import { login as apiLogin } from "../api/authApi";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; // custom hook
+import "./LoginPage.css";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState(""); // username or email
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!username || !email || !password) {
+    if (!identifier || !password) {
       setError("All fields are required");
       return;
     }
 
     setLoading(true);
+
     try {
-      const result = await login({ username, email, password });
-      console.log("Login success:", result);
-      // TODO: redirect user after login
+      const result = await apiLogin({ identifier, password });
+      
+      // Store token + user in context
+      const token =
+        result?.token ||
+        result?.accessToken ||
+        result?.jwt;
+
+      if (!token) {
+        throw new Error("Login response did not include a token.");
+      }
+
+      login(token);
+
+      // Redirect to dashboard/home
+      navigate("/dashboard");
     } catch (err) {
-      setError("Login failed. Please check your credentials.");
+      setError(err?.message || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -40,17 +57,9 @@ export default function LoginPage() {
 
         <input
           className="login-input"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-
-        <input
-          className="login-input"
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Username or Email"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
         />
 
         <input

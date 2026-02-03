@@ -1,0 +1,36 @@
+.user-profile-card {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.profile-content {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.profile-content img {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #fff;
+  box-shadow: 0 10px 24px rgba(16, 24, 40, 0.2);
+}
+
+.profile-restricted {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff3f3;
+  color: #b42318;
+}
+
+@media (max-width: 720px) {
+  .profile-content {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+}

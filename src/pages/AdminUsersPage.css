@@ -1,0 +1,41 @@
+.admin-toolbar {
+  margin: 18px 0;
+}
+
+.admin-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.admin-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.admin-card__header h3 {
+  margin: 0 0 4px;
+}
+
+.admin-card__meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.admin-card__actions {
+  display: grid;
+  gap: 10px;
+}
+
+.error-msg {
+  color: #e24b5b;
+}
+
+.success-msg {
+  color: #1f9d55;
+}

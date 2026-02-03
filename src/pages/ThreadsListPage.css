@@ -1,0 +1,69 @@
+.threads-toolbar {
+  margin: 18px 0;
+}
+
+.threads-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.user-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e4e7ef;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.threads-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.thread-card {
+  background: #fff;
+  border: 1px solid #e4e7ef;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.thread-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.thread-card h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.thread-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.thread-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.thread-actions {
+  margin-top: auto;
+}
+
+.empty-state {
+  text-align: center;
+}
