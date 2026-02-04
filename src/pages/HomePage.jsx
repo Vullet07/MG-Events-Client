@@ -3,13 +3,15 @@ import { Link } from "react-router-dom";
 import "./HomePage.css";
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   return (
     <div className="page-shell">
       <div className="hero">
-        <h1>Welcome back, {user?.username}.</h1>
-        <p>Role: {user?.role}</p>
+        <h1>
+          Welcome back{user?.username ? `, ${user.username}` : ""}.
+        </h1>
+        <p>{loading ? "Loading your profile..." : `Role: ${user?.role || "Member"}`}</p>
       </div>
 
       <div className="home-grid">

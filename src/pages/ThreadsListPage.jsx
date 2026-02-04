@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/api"; // your axios instance
 import { useAuth } from "../context/AuthContext";
+import { formatDateTime } from "../utils/formatDateTime";
 import "./ThreadsListPage.css";
 
 export default function ThreadsListPage() {
   const [threads, setThreads] = useState([]);
   const [filter, setFilter] = useState("");
+  const [userMap, setUserMap] = useState({});
   const { user } = useAuth();
 
   useEffect(() => {
@@ -20,6 +22,33 @@ export default function ThreadsListPage() {
     };
     fetchThreads();
   }, []);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!threads.length) return;
+      const ids = Array.from(new Set(threads.map((t) => t.createdByUserId)));
+      const missing = ids.filter((id) => !userMap[id]);
+      if (missing.length === 0) return;
+      const entries = await Promise.all(
+        missing.map(async (id) => {
+          try {
+            const res = await api.get(`/user/public/${id}`);
+            return [id, res.data?.username];
+          } catch (err) {
+            return [id, null];
+          }
+        })
+      );
+      setUserMap((prev) => {
+        const next = { ...prev };
+        entries.forEach(([id, username]) => {
+          if (username) next[id] = username;
+        });
+        return next;
+      });
+    };
+    fetchUsers();
+  }, [threads, userMap]);
 
   const visibleThreads = threads.filter((thread) =>
     thread.title?.toLowerCase().includes(filter.toLowerCase())
@@ -35,7 +64,7 @@ export default function ThreadsListPage() {
         <div className="threads-actions">
           {user && (
             <span className="user-chip">
-              Signed in as {user.username} · {user.role}
+              Signed in as {user.username || "User"} - {user.role || "Member"}
             </span>
           )}
           <Link to="/create-thread" className="btn btn-primary">Create New Thread</Link>
@@ -73,11 +102,13 @@ export default function ThreadsListPage() {
                 <span className="muted">
                   Created by{" "}
                   <Link to={`/users/${thread.createdByUserId}`} className="link">
-                    User {thread.createdByUserId}
+                    {thread.createdByUsername ||
+                      userMap[thread.createdByUserId] ||
+                      `User ${thread.createdByUserId}`}
                   </Link>
                 </span>
                 <span className="muted">
-                  Last post: {thread.lastPostAt || thread.createdAt}
+                  Last post: {formatDateTime(thread.lastPostAt || thread.createdAt)}
                 </span>
               </div>
               <div className="thread-actions">
@@ -92,3 +123,5 @@ export default function ThreadsListPage() {
     </div>
   );
 }
+
+

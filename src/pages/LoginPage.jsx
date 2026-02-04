@@ -37,7 +37,7 @@ export default function LoginPage() {
         throw new Error("Login response did not include a token.");
       }
 
-      login(token);
+      login(token, result?.user);
 
       // Redirect to dashboard/home
       navigate("/dashboard");

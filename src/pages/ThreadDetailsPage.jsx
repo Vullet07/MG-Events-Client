@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
+import { formatDateTime } from "../utils/formatDateTime";
 import "./ThreadDetailsPage.css";
 
 export default function ThreadDetailsPage() {
@@ -10,10 +11,14 @@ export default function ThreadDetailsPage() {
   const [thread, setThread] = useState(null);
   const [posts, setPosts] = useState([]);
   const [creator, setCreator] = useState(null);
+  const [userMap, setUserMap] = useState({});
   const [newTitle, setNewTitle] = useState("");
-  const [newPhotoUrl, setNewPhotoUrl] = useState("");
+  const [newPhotoFile, setNewPhotoFile] = useState(null);
+  const [newPhotoPreview, setNewPhotoPreview] = useState("");
   const [newPost, setNewPost] = useState("");
+  const [parentPostId, setParentPostId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchThread = async () => {
@@ -26,7 +31,7 @@ export default function ThreadDetailsPage() {
         } catch (userErr) {
           console.error(userErr);
         }
-        const postsRes = await api.get(`/forum-posts/thread/${id}`);
+        const postsRes = await api.get(`/ForumPosts/thread/${id}`);
         setPosts(postsRes.data?.items || postsRes.data || []);
       } catch (err) {
         console.error(err);
@@ -35,27 +40,150 @@ export default function ThreadDetailsPage() {
     fetchThread();
   }, [id]);
 
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const ids = new Set(posts.map((p) => p.userId));
+      if (thread?.createdByUserId) ids.add(thread.createdByUserId);
+      const idList = Array.from(ids);
+      if (!idList.length) return;
+      const missing = idList.filter((userId) => !userMap[userId]);
+      if (!missing.length) return;
+      const entries = await Promise.all(
+        missing.map(async (userId) => {
+          try {
+            const res = await api.get(`/user/public/${userId}`);
+            return [
+              userId,
+              {
+                username: res.data?.username,
+                photoUrl: res.data?.photoUrl
+              }
+            ];
+          } catch (err) {
+            return [userId, null];
+          }
+        })
+      );
+      setUserMap((prev) => {
+        const next = { ...prev };
+        entries.forEach(([userId, info]) => {
+          if (info) next[userId] = info;
+        });
+        return next;
+      });
+    };
+    fetchUsers();
+  }, [posts, thread, userMap]);
+
   const handleReply = async (e) => {
     e.preventDefault();
-    if (!newPost) return;
+    if (!newPost.trim()) return;
     setLoading(true);
+    setError("");
     try {
-      const res = await api.post("/forum-posts", {
-        title: newTitle || null,
-        photoUrl: newPhotoUrl || null,
-        content: newPost,
-        threadId: id,
-      });
+      const formData = new FormData();
+      formData.append("title", newTitle || "");
+      formData.append("content", newPost);
+      formData.append("threadId", String(Number(id)));
+      if (parentPostId) formData.append("parentPostId", String(parentPostId));
+      if (newPhotoFile) formData.append("photo", newPhotoFile);
+
+      const res = await api.post("/ForumPosts", formData);
       setPosts([...posts, res.data]);
       setNewTitle("");
-      setNewPhotoUrl("");
+      setNewPhotoFile(null);
+      setNewPhotoPreview("");
       setNewPost("");
+      setParentPostId(null);
     } catch (err) {
-      console.error(err);
+      setError(err?.message || "Failed to post reply.");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!newPhotoFile) {
+      setNewPhotoPreview("");
+      return;
+    }
+    const previewUrl = URL.createObjectURL(newPhotoFile);
+    setNewPhotoPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [newPhotoFile]);
+
+  const handlePhotoChange = (file) => {
+    if (!file) {
+      setNewPhotoFile(null);
+      return;
+    }
+    const maxSize = 5 * 1024 * 1024;
+    if (!file.type.startsWith("image/")) {
+      setError("Only image files are allowed.");
+      return;
+    }
+    if (file.size > maxSize) {
+      setError("Image must be under 5MB.");
+      return;
+    }
+    setError("");
+    setNewPhotoFile(file);
+  };
+
+  const buildTree = (items) => {
+    const map = new Map();
+    items.forEach((item) => map.set(item.id, { ...item, replies: [] }));
+    const roots = [];
+    map.forEach((node) => {
+      if (node.parentPostId && map.has(node.parentPostId)) {
+        map.get(node.parentPostId).replies.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+    return roots;
+  };
+
+  const renderPosts = (items, depth = 0) =>
+    items.map((post) => (
+      <div key={post.id} className={`post-card depth-${depth}`}>
+        <div className="post-meta">
+          <span className="pill">#{post.id}</span>
+          <div className="post-author">
+            <img
+              src={
+                userMap[post.userId]?.photoUrl ||
+                "/avatar-placeholder.svg"
+              }
+              alt="Author"
+              className="post-avatar"
+            />
+            <Link to={`/users/${post.userId}`} className="link">
+              {userMap[post.userId]?.username || `User ${post.userId}`}
+            </Link>
+          </div>
+          <span className="muted">{formatDateTime(post.createdAt)}</span>
+        </div>
+        {post.parentPostId && (
+          <div className="reply-pill">Replying to #{post.parentPostId}</div>
+        )}
+        {post.title && <h3 className="post-title">{post.title}</h3>}
+        {post.photoUrl && (
+          <img src={post.photoUrl} alt="Post" className="post-photo" />
+        )}
+        <p>{post.content}</p>
+        <button
+          className="btn btn-ghost reply-btn"
+          type="button"
+          onClick={() => setParentPostId(post.id)}
+        >
+          Reply to this post
+        </button>
+        {post.replies?.length > 0 && (
+          <div className="post-replies">{renderPosts(post.replies, depth + 1)}</div>
+        )}
+      </div>
+    ));
 
   if (!thread) return <p>Loading...</p>;
 
@@ -67,9 +195,14 @@ export default function ThreadDetailsPage() {
           <p className="section-subtitle">
             Created by{" "}
             <Link className="link" to={`/users/${thread.createdByUserId}`}>
-              {creator?.username || `User ${thread.createdByUserId}`}
+              {creator?.username ||
+                thread.createdByUsername ||
+                userMap[thread.createdByUserId] ||
+                `User ${thread.createdByUserId}`}
             </Link>{" "}
-            {creator?.role && <span className="pill">{creator.role}</span>}
+            {(creator?.role || thread.createdByRole) && (
+              <span className="pill">{creator?.role || thread.createdByRole}</span>
+            )}
           </p>
         </div>
         <div className="thread-header__tags">
@@ -89,28 +222,26 @@ export default function ThreadDetailsPage() {
             <p className="muted">Be the first to reply to this thread.</p>
           </div>
         ) : (
-          posts.map((post) => (
-            <div key={post.id} className="post-card">
-              <div className="post-meta">
-                <span className="pill">#{post.id}</span>
-                <Link to={`/users/${post.userId}`} className="link">
-                  User {post.userId}
-                </Link>
-                <span className="muted">{post.createdAt}</span>
-              </div>
-              {post.title && <h3 className="post-title">{post.title}</h3>}
-              {post.photoUrl && (
-                <img src={post.photoUrl} alt="Post" className="post-photo" />
-              )}
-              <p>{post.content}</p>
-            </div>
-          ))
+          renderPosts(buildTree(posts))
         )}
       </div>
 
       {!thread.isLocked && user && (
         <form onSubmit={handleReply} className="reply-form card card-pad">
           <h3>Reply to this thread</h3>
+          {parentPostId && (
+            <div className="replying-banner">
+              Replying to post #{parentPostId}
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={() => setParentPostId(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          {error && <p className="error-msg">{error}</p>}
           <div className="form-grid">
             <input
               className="input"
@@ -120,10 +251,13 @@ export default function ThreadDetailsPage() {
             />
             <input
               className="input"
-              value={newPhotoUrl}
-              onChange={(e) => setNewPhotoUrl(e.target.value)}
-              placeholder="Optional photo URL"
+              type="file"
+              accept="image/*"
+              onChange={(e) => handlePhotoChange(e.target.files?.[0] || null)}
             />
+            {newPhotoPreview && (
+              <img src={newPhotoPreview} alt="Preview" className="photo-preview" />
+            )}
             <textarea
               className="textarea"
               value={newPost}

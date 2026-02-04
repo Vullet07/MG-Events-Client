@@ -42,6 +42,21 @@
   margin-bottom: 10px;
 }
 
+.post-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.post-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 6px 14px rgba(16, 24, 40, 0.2);
+}
+
 .post-title {
   margin: 0 0 8px;
 }
@@ -57,4 +72,64 @@
 .reply-form {
   display: grid;
   gap: 12px;
+}
+
+.error-msg {
+  color: #e24b5b;
+}
+
+.replying-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f4f6ff;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.reply-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f4f6ff;
+  color: #2f5bff;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.reply-btn {
+  margin-top: 8px;
+}
+
+.post-replies {
+  margin-top: 14px;
+  padding-left: 16px;
+  border-left: 2px dashed #e4e7ef;
+  display: grid;
+  gap: 12px;
+}
+
+.depth-1 {
+  background: #fbfcff;
+}
+
+.depth-2 {
+  background: #f8faff;
+}
+
+.depth-3 {
+  background: #f5f8ff;
+}
+
+.photo-preview {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid #e4e7ef;
 }
