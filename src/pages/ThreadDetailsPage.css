@@ -2,7 +2,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .thread-header__tags {
@@ -21,17 +21,17 @@
 }
 
 .posts-list {
-  margin: 24px 0;
+  margin: 16px 0;
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .post-card {
   border: 1px solid #e4e7ef;
-  padding: 16px;
+  padding: 14px;
   border-radius: 18px;
   background-color: #fff;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 24px rgba(120, 0, 0, 0.08);
 }
 
 .post-meta {
@@ -67,6 +67,43 @@
   object-fit: cover;
   border-radius: 14px;
   margin-bottom: 10px;
+  cursor: zoom-in;
+}
+
+.post-photo-wrap {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.image-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 12, 26, 0.8);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  padding: 24px;
+}
+
+.image-modal__img {
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+}
+
+.image-modal__close {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .reply-form {

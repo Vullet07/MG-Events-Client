@@ -75,6 +75,8 @@ export default function LoginPage() {
         </button>
 
         <p className="login-footer">
+          <Link to="/forgot-password">Forgot password?</Link>
+          <span> · </span>
           Don't have an account? <Link to="/register">Register</Link>
         </p>
       </form>

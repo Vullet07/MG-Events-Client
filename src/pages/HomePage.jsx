@@ -23,6 +23,7 @@ export default function HomePage() {
           <div className="home-links">
             <Link to="/threads" className="btn btn-primary">Explore Threads</Link>
             <Link to="/create-thread" className="btn btn-secondary">Start a Thread</Link>
+            <Link to="/map" className="btn btn-ghost">Open Event Map</Link>
             <Link to="/profile" className="btn btn-ghost">My Profile</Link>
           </div>
         </div>
@@ -34,7 +35,6 @@ export default function HomePage() {
           </p>
           <div className="home-links">
             <Link to="/threads" className="btn btn-ghost">Latest Discussions</Link>
-            <Link to="/profile" className="btn btn-ghost">Update Photo</Link>
           </div>
         </div>
 

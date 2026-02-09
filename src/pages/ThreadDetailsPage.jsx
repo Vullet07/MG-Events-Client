@@ -19,6 +19,9 @@ export default function ThreadDetailsPage() {
   const [parentPostId, setParentPostId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [visibleImages, setVisibleImages] = useState({});
+  const [imageSizes, setImageSizes] = useState({});
+  const [activeImage, setActiveImage] = useState(null);
 
   useEffect(() => {
     const fetchThread = async () => {
@@ -144,6 +147,36 @@ export default function ThreadDetailsPage() {
     return roots;
   };
 
+  const toggleImage = (postId) => {
+    setVisibleImages((prev) => ({ ...prev, [postId]: !prev[postId] }));
+  };
+
+  const handleImageLoad = (postId, e) => {
+    const { naturalWidth, naturalHeight } = e.target;
+    const width = Math.max(120, Math.round(naturalWidth / 2));
+    const height = Math.max(120, Math.round(naturalHeight / 2));
+    setImageSizes((prev) => ({
+      ...prev,
+      [postId]: { width, height, naturalWidth, naturalHeight }
+    }));
+  };
+
+  const openImage = (postId, url) => {
+    const size = imageSizes[postId];
+    if (!size) {
+      setActiveImage({ url });
+      return;
+    }
+    const maxW = window.innerWidth * 0.9;
+    const maxH = window.innerHeight * 0.9;
+    const scale = Math.min(maxW / size.naturalWidth, maxH / size.naturalHeight, 1);
+    setActiveImage({
+      url,
+      width: Math.round(size.naturalWidth * scale),
+      height: Math.round(size.naturalHeight * scale)
+    });
+  };
+
   const renderPosts = (items, depth = 0) =>
     items.map((post) => (
       <div key={post.id} className={`post-card depth-${depth}`}>
@@ -169,7 +202,32 @@ export default function ThreadDetailsPage() {
         )}
         {post.title && <h3 className="post-title">{post.title}</h3>}
         {post.photoUrl && (
-          <img src={post.photoUrl} alt="Post" className="post-photo" />
+          <div className="post-photo-wrap">
+            <button
+              className="btn btn-ghost"
+              type="button"
+              onClick={() => toggleImage(post.id)}
+            >
+              {visibleImages[post.id] ? "Hide Photo" : "Show Photo"}
+            </button>
+            {visibleImages[post.id] && (
+              <img
+                src={post.photoUrl}
+                alt="Post"
+                className="post-photo"
+                onLoad={(e) => handleImageLoad(post.id, e)}
+                onClick={() => openImage(post.id, post.photoUrl)}
+                style={
+                  imageSizes[post.id]
+                    ? {
+                        width: `${imageSizes[post.id].width}px`,
+                        height: `${imageSizes[post.id].height}px`
+                      }
+                    : undefined
+                }
+              />
+            )}
+          </div>
         )}
         <p>{post.content}</p>
         <button
@@ -269,6 +327,29 @@ export default function ThreadDetailsPage() {
             {loading ? "Posting..." : "Post Reply"}
           </button>
         </form>
+      )}
+
+      {activeImage && (
+        <div className="image-modal" onClick={() => setActiveImage(null)}>
+          <button
+            className="image-modal__close"
+            type="button"
+            onClick={() => setActiveImage(null)}
+          >
+            Close
+          </button>
+          <img
+            src={activeImage.url}
+            alt="Full"
+            className="image-modal__img"
+            style={
+              activeImage.width && activeImage.height
+                ? { width: activeImage.width, height: activeImage.height }
+                : undefined
+            }
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
     </div>
   );

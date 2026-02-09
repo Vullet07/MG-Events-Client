@@ -36,6 +36,13 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    if (error.response?.status === 403) {
+      const message = error.response?.data?.message || "";
+      if (message.toLowerCase().includes("banned")) {
+        localStorage.removeItem("token");
+        window.location.href = "/login?banned=1";
+      }
+    }
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       window.location.href = "/login";

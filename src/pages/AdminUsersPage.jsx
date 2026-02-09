@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/api";
+import { useAuth } from "../context/AuthContext";
 import "./AdminUsersPage.css";
 
 export default function AdminUsersPage() {
@@ -10,6 +11,7 @@ export default function AdminUsersPage() {
   const [error, setError] = useState("");
   const [banUntil, setBanUntil] = useState({});
   const [status, setStatus] = useState({});
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -95,6 +97,9 @@ export default function AdminUsersPage() {
         {visibleUsers.map((user) => {
           const statusInfo = status[user.id];
           const isBanned = statusInfo?.isBanned;
+          const isSelf = currentUser?.id === user.id;
+          const isAdmin = user.role === "Admin";
+          const banDisabled = isSelf || isAdmin;
           return (
             <div key={user.id} className="card card-pad admin-card">
               <div className="admin-card__header">
@@ -119,13 +124,25 @@ export default function AdminUsersPage() {
                       [user.id]: e.target.value
                     }))
                   }
+                  disabled={banDisabled}
                 />
-                <button className="btn btn-danger" onClick={() => handleBan(user.id)}>
+                <button
+                  className="btn btn-danger"
+                  onClick={() => handleBan(user.id)}
+                  disabled={banDisabled}
+                >
                   Ban
                 </button>
-                <button className="btn btn-secondary" onClick={() => handleUnban(user.id)}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => handleUnban(user.id)}
+                  disabled={banDisabled}
+                >
                   Unban
                 </button>
+                {banDisabled && (
+                  <span className="pill">Admin protected</span>
+                )}
                 {isBanned !== undefined && (
                   <span className={`tag ${isBanned ? "tag-danger" : "tag-secondary"}`}>
                     {isBanned ? "Banned" : "Active"}
