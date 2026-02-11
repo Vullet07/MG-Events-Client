@@ -38,14 +38,14 @@ export default function HomePage() {
           </div>
         </div>
 
-        {user?.role === "Admin" && (
+        {(user?.role === "Admin" || user?.role === "Teacher") && (
           <div className="card card-pad">
-            <h2 className="section-title">Admin Hub</h2>
+            <h2 className="section-title">Moderation Hub</h2>
             <p className="section-subtitle">
               Manage users, moderations, and community health.
             </p>
             <div className="home-links">
-              <Link to="/admin/users" className="btn btn-primary">User Dashboard</Link>
+              <Link to="/admin/users" className="btn btn-primary">Moderation Dashboard</Link>
             </div>
           </div>
         )}

@@ -1,6 +1,8 @@
 import { useAuth } from "../context/AuthContext";
 import { useState, useEffect } from "react";
 import api from "../api/api";
+import { formatDateTime } from "../utils/formatDateTime";
+import { Link } from "react-router-dom";
 import "./ProfilePage.css";
 
 export default function ProfilePage() {
@@ -8,14 +10,22 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
+  const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
+  const [activeTab, setActiveTab] = useState("threads");
+  const [tabData, setTabData] = useState({
+    threads: { items: [], page: 1, totalPages: 1 },
+    posts: { items: [], page: 1, totalPages: 1 },
+    pins: { items: [], page: 1, totalPages: 1 }
+  });
 
   useEffect(() => {
     if (!user?.id) return;
     const fetchProfile = async () => {
       try {
-        const res = await api.get("/auth/me");
+        const res = await api.get("/user/profile");
         setProfile(res.data);
+        setUsername(res.data.username || "");
       } catch (err) {
         console.error(err);
       }
@@ -50,6 +60,20 @@ export default function ProfilePage() {
     }
   };
 
+  const handleSaveAccount = async () => {
+    try {
+      if (!profile?.id) return;
+      const payload = {
+        username: username.trim()
+      };
+      const res = await api.put(`/user/${profile.id}`, payload);
+      setProfile(res.data);
+      setMessage("Account information updated.");
+    } catch (err) {
+      setMessage(err?.message || "Failed to update profile.");
+    }
+  };
+
   useEffect(() => {
     if (!photoFile) {
       setPhotoPreview("");
@@ -59,6 +83,69 @@ export default function ProfilePage() {
     setPhotoPreview(previewUrl);
     return () => URL.revokeObjectURL(previewUrl);
   }, [photoFile]);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    const loadTab = async () => {
+      try {
+        const page = tabData[activeTab].page;
+        const res = await api.get(`/user/public/${profile.id}/${activeTab}?page=${page}&pageSize=6`);
+        setTabData((prev) => ({
+          ...prev,
+          [activeTab]: {
+            items: res.data?.items || [],
+            page: res.data?.page || page,
+            totalPages: res.data?.totalPages || 1
+          }
+        }));
+      } catch (err) {
+        setMessage(err?.message || "Failed to load account content.");
+      }
+    };
+    loadTab();
+  }, [profile?.id, activeTab, tabData[activeTab].page]);
+
+  const changeTabPage = (nextPage) => {
+    setTabData((prev) => ({
+      ...prev,
+      [activeTab]: { ...prev[activeTab], page: nextPage }
+    }));
+  };
+
+  const currentTab = tabData[activeTab];
+
+  const renderTabItems = () => {
+    if (currentTab.items.length === 0) {
+      return <p className="muted">No {activeTab} yet.</p>;
+    }
+
+    if (activeTab === "threads") {
+      return currentTab.items.map((item) => (
+        <Link key={item.threadId} to={`/threads/${item.threadId}`} className="profile-content-item">
+          <strong>{item.title}</strong>
+          <span className="muted">{formatDateTime(item.lastPostAt || item.createdAt)}</span>
+        </Link>
+      ));
+    }
+
+    if (activeTab === "posts") {
+      return currentTab.items.map((item) => (
+        <Link key={item.postId} to={`/threads/${item.threadId}`} className="profile-content-item">
+          <strong>{item.title || item.threadTitle}</strong>
+          <p>{item.content}</p>
+          <span className="muted">{formatDateTime(item.createdAt)} | Score {item.score}</span>
+        </Link>
+      ));
+    }
+
+    return currentTab.items.map((item) => (
+      <div key={item.pinId} className="profile-content-item">
+        <strong>{item.title}</strong>
+        {item.description && <p>{item.description}</p>}
+        <span className="muted">{formatDateTime(item.createdAt)} | Score {item.score}</span>
+      </div>
+    ));
+  };
 
   if (loading || !user?.id) return <p>Loading...</p>;
   if (!profile) return <p>Loading...</p>;
@@ -75,13 +162,27 @@ export default function ProfilePage() {
           <h2>{profile.username}</h2>
           <p className="muted">{profile.email}</p>
           <span className="tag tag-secondary">{profile.role}</span>
+          <div className="profile-stats">
+            <div><strong>{profile.threadsCount || 0}</strong> threads</div>
+            <div><strong>{profile.postsCount || 0}</strong> posts</div>
+            <div><strong>{profile.pinsCount || 0}</strong> pins</div>
+          </div>
         </div>
 
         <div className="card card-pad profile-editor">
-          <h3>Update Photo</h3>
-          <p className="muted">Upload a new profile photo.</p>
+          <h3>Account Settings</h3>
+          <p className="muted">Update your account details.</p>
           {message && <p className="success-msg">{message}</p>}
           <div className="form-grid">
+            <input
+              className="input"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Username"
+            />
+            <button className="btn btn-secondary" onClick={handleSaveAccount}>
+              Save Account Info
+            </button>
             <input
               className="input"
               type="file"
@@ -95,6 +196,57 @@ export default function ProfilePage() {
               Save Changes
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="card card-pad profile-content-panel">
+        <h3>Your Activity</h3>
+        <div className="profile-tabs">
+          <button
+            type="button"
+            className={`btn btn-ghost ${activeTab === "threads" ? "tab-active" : ""}`}
+            onClick={() => setActiveTab("threads")}
+          >
+            Threads
+          </button>
+          <button
+            type="button"
+            className={`btn btn-ghost ${activeTab === "posts" ? "tab-active" : ""}`}
+            onClick={() => setActiveTab("posts")}
+          >
+            Posts
+          </button>
+          <button
+            type="button"
+            className={`btn btn-ghost ${activeTab === "pins" ? "tab-active" : ""}`}
+            onClick={() => setActiveTab("pins")}
+          >
+            Pins
+          </button>
+        </div>
+
+        <div className="profile-content-list">{renderTabItems()}</div>
+
+        <div className="profile-pagination">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={currentTab.page <= 1}
+            onClick={() => changeTabPage(currentTab.page - 1)}
+          >
+            Prev
+          </button>
+          <span className="pill">
+            Page {currentTab.page} / {currentTab.totalPages || 1}
+          </span>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={currentTab.page >= (currentTab.totalPages || 1)}
+            onClick={() => changeTabPage(currentTab.page + 1)}
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

@@ -42,6 +42,18 @@
   margin-top: 8px;
 }
 
+.pin-votes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.success-msg {
+  color: #1f9d55;
+}
+
 @media (max-width: 920px) {
   .map-layout {
     grid-template-columns: 1fr;

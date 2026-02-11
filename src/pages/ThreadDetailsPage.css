@@ -143,6 +143,19 @@
   margin-top: 8px;
 }
 
+.post-votes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.vote-active {
+  border-color: #b0001a;
+  background: #ffe7ea;
+}
+
 .post-replies {
   margin-top: 14px;
   padding-left: 16px;

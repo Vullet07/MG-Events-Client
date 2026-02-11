@@ -62,6 +62,9 @@
 
 .thread-actions {
   margin-top: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .empty-state {

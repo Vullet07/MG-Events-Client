@@ -9,6 +9,7 @@ import AdminUsersPage from "./pages/AdminUsersPage";
 import CreateThreadPage from "./pages/CreateThreadPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import MapPage from "./pages/MapPage";
+import ReportPage from "./pages/ReportPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -78,9 +79,17 @@ export default function App() {
         }
       />
       <Route
+        path="/report"
+        element={
+          <ProtectedRoute>
+            <ReportPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin/users"
         element={
-          <ProtectedRoute role="Admin">
+          <ProtectedRoute role={["Admin", "Teacher"]}>
             <AdminUsersPage />
           </ProtectedRoute>
         }

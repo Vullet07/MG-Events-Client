@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import { formatDateTime } from "../utils/formatDateTime";
@@ -7,6 +7,7 @@ import "./ThreadDetailsPage.css";
 
 export default function ThreadDetailsPage() {
   const { id } = useParams();
+  const location = useLocation();
   const { user } = useAuth();
   const [thread, setThread] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -105,6 +106,30 @@ export default function ThreadDetailsPage() {
     }
   };
 
+  const handlePostVote = async (postId, value) => {
+    try {
+      await api.post(`/ForumPosts/${postId}/vote`, { value });
+      setPosts((prev) =>
+        prev.map((p) => {
+          if (p.id !== postId) return p;
+          const oldVote = p.myVote || 0;
+          const nextVote = oldVote === value ? 0 : value;
+          const upDelta = (nextVote === 1 ? 1 : 0) - (oldVote === 1 ? 1 : 0);
+          const downDelta = (nextVote === -1 ? 1 : 0) - (oldVote === -1 ? 1 : 0);
+          return {
+            ...p,
+            myVote: nextVote,
+            upvotes: (p.upvotes || 0) + upDelta,
+            downvotes: (p.downvotes || 0) + downDelta,
+            score: (p.score || 0) + upDelta - downDelta
+          };
+        })
+      );
+    } catch (err) {
+      setError(err?.message || "Failed to vote.");
+    }
+  };
+
   useEffect(() => {
     if (!newPhotoFile) {
       setNewPhotoPreview("");
@@ -181,7 +206,6 @@ export default function ThreadDetailsPage() {
     items.map((post) => (
       <div key={post.id} className={`post-card depth-${depth}`}>
         <div className="post-meta">
-          <span className="pill">#{post.id}</span>
           <div className="post-author">
             <img
               src={
@@ -192,13 +216,13 @@ export default function ThreadDetailsPage() {
               className="post-avatar"
             />
             <Link to={`/users/${post.userId}`} className="link">
-              {userMap[post.userId]?.username || `User ${post.userId}`}
+              {userMap[post.userId]?.username || "Unknown user"}
             </Link>
           </div>
           <span className="muted">{formatDateTime(post.createdAt)}</span>
         </div>
         {post.parentPostId && (
-          <div className="reply-pill">Replying to #{post.parentPostId}</div>
+          <div className="reply-pill">Reply to another post</div>
         )}
         {post.title && <h3 className="post-title">{post.title}</h3>}
         {post.photoUrl && (
@@ -230,6 +254,29 @@ export default function ThreadDetailsPage() {
           </div>
         )}
         <p>{post.content}</p>
+        <div className="post-votes">
+          <button
+            className={`btn btn-ghost ${post.myVote === 1 ? "vote-active" : ""}`}
+            type="button"
+            onClick={() => handlePostVote(post.id, 1)}
+          >
+            <span aria-hidden="true">👍</span> {post.upvotes || 0}
+          </button>
+          <button
+            className={`btn btn-ghost ${post.myVote === -1 ? "vote-active" : ""}`}
+            type="button"
+            onClick={() => handlePostVote(post.id, -1)}
+          >
+            <span aria-hidden="true">👎</span> {post.downvotes || 0}
+          </button>
+          <span className="pill">Score {post.score || 0}</span>
+          <Link
+            className="btn btn-danger"
+            to={`/report?type=Post&id=${post.id}&label=${encodeURIComponent(post.title || post.content?.slice(0, 40) || "Post")}&returnTo=${encodeURIComponent(location.pathname)}`}
+          >
+            Report
+          </Link>
+        </div>
         <button
           className="btn btn-ghost reply-btn"
           type="button"
@@ -255,8 +302,8 @@ export default function ThreadDetailsPage() {
             <Link className="link" to={`/users/${thread.createdByUserId}`}>
               {creator?.username ||
                 thread.createdByUsername ||
-                userMap[thread.createdByUserId] ||
-                `User ${thread.createdByUserId}`}
+                userMap[thread.createdByUserId]?.username ||
+                "Unknown user"}
             </Link>{" "}
             {(creator?.role || thread.createdByRole) && (
               <span className="pill">{creator?.role || thread.createdByRole}</span>
@@ -264,6 +311,12 @@ export default function ThreadDetailsPage() {
           </p>
         </div>
         <div className="thread-header__tags">
+          <Link
+            className="btn btn-ghost"
+            to={`/report?type=Thread&id=${thread.id}&label=${encodeURIComponent(thread.title || "Thread")}&returnTo=${encodeURIComponent(location.pathname)}`}
+          >
+            Report Thread
+          </Link>
           {thread.isPinned && <span className="tag">Pinned</span>}
           {thread.isLocked && <span className="tag tag-danger">Locked</span>}
         </div>
@@ -289,7 +342,7 @@ export default function ThreadDetailsPage() {
           <h3>Reply to this thread</h3>
           {parentPostId && (
             <div className="replying-banner">
-              Replying to post #{parentPostId}
+              Replying to selected post
               <button
                 className="btn btn-ghost"
                 type="button"

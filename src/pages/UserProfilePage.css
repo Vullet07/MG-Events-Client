@@ -1,5 +1,5 @@
 .user-profile-card {
-  max-width: 720px;
+  max-width: 920px;
   margin: 0 auto;
 }
 
@@ -26,6 +26,48 @@
   border-radius: 12px;
   background: #fff3f3;
   color: #b42318;
+}
+
+.success-msg {
+  color: #1f9d55;
+}
+
+.profile-tabs {
+  margin-top: 20px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tab-active {
+  border-color: #b0001a;
+  background: #ffe7ea;
+}
+
+.profile-items {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.profile-item {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #f0dfe3;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.profile-item p {
+  margin: 0;
+}
+
+.profile-pagination {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 @media (max-width: 720px) {

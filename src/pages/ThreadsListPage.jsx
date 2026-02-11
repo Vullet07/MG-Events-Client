@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import api from "../api/api"; // your axios instance
 import { useAuth } from "../context/AuthContext";
 import { formatDateTime } from "../utils/formatDateTime";
 import "./ThreadsListPage.css";
 
 export default function ThreadsListPage() {
+  const location = useLocation();
   const [threads, setThreads] = useState([]);
   const [filter, setFilter] = useState("");
   const [userMap, setUserMap] = useState({});
@@ -104,7 +105,7 @@ export default function ThreadsListPage() {
                   <Link to={`/users/${thread.createdByUserId}`} className="link">
                     {thread.createdByUsername ||
                       userMap[thread.createdByUserId] ||
-                      `User ${thread.createdByUserId}`}
+                      "Unknown user"}
                   </Link>
                 </span>
                 <span className="muted">
@@ -114,6 +115,12 @@ export default function ThreadsListPage() {
               <div className="thread-actions">
                 <Link to={`/threads/${thread.id}`} className="btn btn-secondary">
                   View Thread
+                </Link>
+                <Link
+                  className="btn btn-danger"
+                  to={`/report?type=Thread&id=${thread.id}&label=${encodeURIComponent(thread.title || "Thread")}&returnTo=${encodeURIComponent(location.pathname)}`}
+                >
+                  Report
                 </Link>
               </div>
             </div>
