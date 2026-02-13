@@ -23,15 +23,24 @@ export default function AdminUsersPage() {
     const fetchUsers = async () => {
       try {
         const res = await api.get("/user?page=1&pageSize=100");
-        setUsers(res.data.items || res.data);
+        const list = res.data.items || res.data;
+        if (currentUser?.role === "Teacher") {
+          setUsers(list.filter((u) => u.role === "Student"));
+          return;
+        }
+        setUsers(list);
       } catch (err) {
         setError(err?.message || "Failed to load users.");
       }
     };
-    fetchUsers();
-  }, []);
+    if (currentUser?.role) fetchUsers();
+  }, [currentUser?.role]);
 
   useEffect(() => {
+    if (currentUser?.role !== "Admin") {
+      setReports([]);
+      return;
+    }
     const fetchReports = async () => {
       try {
         const res = await api.get("/reports");
@@ -41,7 +50,7 @@ export default function AdminUsersPage() {
       }
     };
     fetchReports();
-  }, []);
+  }, [currentUser?.role]);
 
   const visibleUsers = useMemo(() => {
     if (!filter) return users;
@@ -226,45 +235,47 @@ export default function AdminUsersPage() {
         })}
       </div>
 
-      <div className="card card-pad admin-reports">
-        <h3>Moderation Reports</h3>
-        {reports.length === 0 ? (
-          <p className="muted">No reports submitted yet.</p>
-        ) : (
-          reports.map((report) => (
-            <div key={report.id} className="admin-report-item">
-              <div>
-                <strong>{report.targetType}: {report.targetLabel}</strong>
-                <p className="muted">{report.reason}</p>
+      {currentUser?.role === "Admin" && (
+        <div className="card card-pad admin-reports">
+          <h3>Moderation Reports</h3>
+          {reports.length === 0 ? (
+            <p className="muted">No reports submitted yet.</p>
+          ) : (
+            reports.map((report) => (
+              <div key={report.id} className="admin-report-item">
+                <div>
+                  <strong>{report.targetType}: {report.targetLabel}</strong>
+                  <p className="muted">{report.reason}</p>
+                </div>
+                <div className="admin-report-actions">
+                  <span className="pill">{report.status}</span>
+                  <button
+                    className="btn btn-secondary"
+                    type="button"
+                    onClick={() => handleReportStatus(report.id, "Reviewed")}
+                  >
+                    Review
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    onClick={() => handleReportStatus(report.id, "Actioned")}
+                  >
+                    Action
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    onClick={() => handleReportStatus(report.id, "Dismissed")}
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </div>
-              <div className="admin-report-actions">
-                <span className="pill">{report.status}</span>
-                <button
-                  className="btn btn-secondary"
-                  type="button"
-                  onClick={() => handleReportStatus(report.id, "Reviewed")}
-                >
-                  Review
-                </button>
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  onClick={() => handleReportStatus(report.id, "Actioned")}
-                >
-                  Action
-                </button>
-                <button
-                  className="btn btn-ghost"
-                  type="button"
-                  onClick={() => handleReportStatus(report.id, "Dismissed")}
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

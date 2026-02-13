@@ -13,7 +13,7 @@ export default function ProtectedRoute({ children, role }) {
   if (role) {
     const allowedRoles = Array.isArray(role) ? role : [role];
     if (!allowedRoles.includes(user.role)) {
-      return <Navigate to="/" replace />;
+      return <Navigate to="/dashboard" replace />;
     }
   }
 

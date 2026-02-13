@@ -20,6 +20,7 @@ export default function ThreadDetailsPage() {
   const [parentPostId, setParentPostId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [openActionsPostId, setOpenActionsPostId] = useState(null);
   const [visibleImages, setVisibleImages] = useState({});
   const [imageSizes, setImageSizes] = useState({});
   const [activeImage, setActiveImage] = useState(null);
@@ -32,8 +33,8 @@ export default function ThreadDetailsPage() {
         try {
           const userRes = await api.get(`/user/public/${res.data.createdByUserId}`);
           setCreator(userRes.data);
-        } catch (userErr) {
-          console.error(userErr);
+        } catch {
+          // optional public profile lookup
         }
         const postsRes = await api.get(`/ForumPosts/thread/${id}`);
         setPosts(postsRes.data?.items || postsRes.data || []);
@@ -48,10 +49,9 @@ export default function ThreadDetailsPage() {
     const fetchUsers = async () => {
       const ids = new Set(posts.map((p) => p.userId));
       if (thread?.createdByUserId) ids.add(thread.createdByUserId);
-      const idList = Array.from(ids);
-      if (!idList.length) return;
-      const missing = idList.filter((userId) => !userMap[userId]);
+      const missing = Array.from(ids).filter((userId) => !userMap[userId]);
       if (!missing.length) return;
+
       const entries = await Promise.all(
         missing.map(async (userId) => {
           try {
@@ -63,11 +63,12 @@ export default function ThreadDetailsPage() {
                 photoUrl: res.data?.photoUrl
               }
             ];
-          } catch (err) {
+          } catch {
             return [userId, null];
           }
         })
       );
+
       setUserMap((prev) => {
         const next = { ...prev };
         entries.forEach(([userId, info]) => {
@@ -76,6 +77,7 @@ export default function ThreadDetailsPage() {
         return next;
       });
     };
+
     fetchUsers();
   }, [posts, thread, userMap]);
 
@@ -93,12 +95,13 @@ export default function ThreadDetailsPage() {
       if (newPhotoFile) formData.append("photo", newPhotoFile);
 
       const res = await api.post("/ForumPosts", formData);
-      setPosts([...posts, res.data]);
+      setPosts((prev) => [...prev, res.data]);
       setNewTitle("");
       setNewPhotoFile(null);
       setNewPhotoPreview("");
       setNewPost("");
       setParentPostId(null);
+      setOpenActionsPostId(null);
     } catch (err) {
       setError(err?.message || "Failed to post reply.");
     } finally {
@@ -207,31 +210,50 @@ export default function ThreadDetailsPage() {
       <div key={post.id} className={`post-card depth-${depth}`}>
         <div className="post-meta">
           <div className="post-author">
-            <img
-              src={
-                userMap[post.userId]?.photoUrl ||
-                "/avatar-placeholder.svg"
-              }
-              alt="Author"
-              className="post-avatar"
-            />
+            <img src={userMap[post.userId]?.photoUrl || "/avatar-placeholder.svg"} alt="Author" className="post-avatar" />
             <Link to={`/users/${post.userId}`} className="link">
               {userMap[post.userId]?.username || "Unknown user"}
             </Link>
           </div>
           <span className="muted">{formatDateTime(post.createdAt)}</span>
+          <div className="post-actions-menu">
+            <button
+              type="button"
+              className="post-actions-trigger"
+              onClick={() => setOpenActionsPostId((prev) => (prev === post.id ? null : post.id))}
+            >
+              ...
+            </button>
+            {openActionsPostId === post.id && (
+              <div className="post-actions-dropdown">
+                <button
+                  className="post-actions-item"
+                  type="button"
+                  onClick={() => {
+                    setParentPostId(post.id);
+                    setOpenActionsPostId(null);
+                  }}
+                >
+                  Reply
+                </button>
+                <Link
+                  className="post-actions-item"
+                  to={`/report?type=Post&id=${post.id}&label=${encodeURIComponent(post.title || post.content?.slice(0, 40) || "Post")}&returnTo=${encodeURIComponent(location.pathname)}`}
+                  onClick={() => setOpenActionsPostId(null)}
+                >
+                  Report
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
-        {post.parentPostId && (
-          <div className="reply-pill">Reply to another post</div>
-        )}
+
+        {post.parentPostId && <div className="reply-pill">Reply to another post</div>}
         {post.title && <h3 className="post-title">{post.title}</h3>}
+
         {post.photoUrl && (
           <div className="post-photo-wrap">
-            <button
-              className="btn btn-ghost"
-              type="button"
-              onClick={() => toggleImage(post.id)}
-            >
+            <button className="btn btn-ghost" type="button" onClick={() => toggleImage(post.id)}>
               {visibleImages[post.id] ? "Hide Photo" : "Show Photo"}
             </button>
             {visibleImages[post.id] && (
@@ -253,40 +275,27 @@ export default function ThreadDetailsPage() {
             )}
           </div>
         )}
+
         <p>{post.content}</p>
+
         <div className="post-votes">
           <button
             className={`btn btn-ghost ${post.myVote === 1 ? "vote-active" : ""}`}
             type="button"
             onClick={() => handlePostVote(post.id, 1)}
           >
-            <span aria-hidden="true">👍</span> {post.upvotes || 0}
+            <span aria-hidden="true">{"\uD83D\uDC4D"}</span> {post.upvotes || 0}
           </button>
           <button
             className={`btn btn-ghost ${post.myVote === -1 ? "vote-active" : ""}`}
             type="button"
             onClick={() => handlePostVote(post.id, -1)}
           >
-            <span aria-hidden="true">👎</span> {post.downvotes || 0}
+            <span aria-hidden="true">{"\uD83D\uDC4E"}</span> {post.downvotes || 0}
           </button>
-          <span className="pill">Score {post.score || 0}</span>
-          <Link
-            className="btn btn-danger"
-            to={`/report?type=Post&id=${post.id}&label=${encodeURIComponent(post.title || post.content?.slice(0, 40) || "Post")}&returnTo=${encodeURIComponent(location.pathname)}`}
-          >
-            Report
-          </Link>
         </div>
-        <button
-          className="btn btn-ghost reply-btn"
-          type="button"
-          onClick={() => setParentPostId(post.id)}
-        >
-          Reply to this post
-        </button>
-        {post.replies?.length > 0 && (
-          <div className="post-replies">{renderPosts(post.replies, depth + 1)}</div>
-        )}
+
+        {post.replies?.length > 0 && <div className="post-replies">{renderPosts(post.replies, depth + 1)}</div>}
       </div>
     ));
 
@@ -300,14 +309,9 @@ export default function ThreadDetailsPage() {
           <p className="section-subtitle">
             Created by{" "}
             <Link className="link" to={`/users/${thread.createdByUserId}`}>
-              {creator?.username ||
-                thread.createdByUsername ||
-                userMap[thread.createdByUserId]?.username ||
-                "Unknown user"}
+              {creator?.username || thread.createdByUsername || userMap[thread.createdByUserId]?.username || "Unknown user"}
             </Link>{" "}
-            {(creator?.role || thread.createdByRole) && (
-              <span className="pill">{creator?.role || thread.createdByRole}</span>
-            )}
+            {(creator?.role || thread.createdByRole) && <span className="pill">{creator?.role || thread.createdByRole}</span>}
           </p>
         </div>
         <div className="thread-header__tags">
@@ -322,9 +326,7 @@ export default function ThreadDetailsPage() {
         </div>
       </div>
 
-      {thread.isLocked && (
-        <div className="locked-banner">This thread is locked.</div>
-      )}
+      {thread.isLocked && <div className="locked-banner">This thread is locked.</div>}
 
       <div className="posts-list">
         {posts.length === 0 ? (
@@ -343,38 +345,17 @@ export default function ThreadDetailsPage() {
           {parentPostId && (
             <div className="replying-banner">
               Replying to selected post
-              <button
-                className="btn btn-ghost"
-                type="button"
-                onClick={() => setParentPostId(null)}
-              >
+              <button className="btn btn-ghost" type="button" onClick={() => setParentPostId(null)}>
                 Cancel
               </button>
             </div>
           )}
           {error && <p className="error-msg">{error}</p>}
           <div className="form-grid">
-            <input
-              className="input"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="Optional title"
-            />
-            <input
-              className="input"
-              type="file"
-              accept="image/*"
-              onChange={(e) => handlePhotoChange(e.target.files?.[0] || null)}
-            />
-            {newPhotoPreview && (
-              <img src={newPhotoPreview} alt="Preview" className="photo-preview" />
-            )}
-            <textarea
-              className="textarea"
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              placeholder="Write your reply..."
-            />
+            <input className="input" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Optional title" />
+            <input className="input" type="file" accept="image/*" onChange={(e) => handlePhotoChange(e.target.files?.[0] || null)} />
+            {newPhotoPreview && <img src={newPhotoPreview} alt="Preview" className="photo-preview" />}
+            <textarea className="textarea" value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder="Write your reply..." />
           </div>
           <button className="btn btn-primary" type="submit" disabled={loading}>
             {loading ? "Posting..." : "Post Reply"}
@@ -384,22 +365,14 @@ export default function ThreadDetailsPage() {
 
       {activeImage && (
         <div className="image-modal" onClick={() => setActiveImage(null)}>
-          <button
-            className="image-modal__close"
-            type="button"
-            onClick={() => setActiveImage(null)}
-          >
+          <button className="image-modal__close" type="button" onClick={() => setActiveImage(null)}>
             Close
           </button>
           <img
             src={activeImage.url}
             alt="Full"
             className="image-modal__img"
-            style={
-              activeImage.width && activeImage.height
-                ? { width: activeImage.width, height: activeImage.height }
-                : undefined
-            }
+            style={activeImage.width && activeImage.height ? { width: activeImage.width, height: activeImage.height } : undefined}
             onClick={(e) => e.stopPropagation()}
           />
         </div>

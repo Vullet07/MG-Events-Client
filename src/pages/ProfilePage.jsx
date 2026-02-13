@@ -33,42 +33,34 @@ export default function ProfilePage() {
     fetchProfile();
   }, [user?.id]);
 
-  const handleUpdate = async () => {
-    try {
-      if (!profile?.id) return;
-      if (!photoFile) {
-        setMessage("Please choose a photo to upload.");
-        return;
-      }
-      if (!photoFile.type.startsWith("image/")) {
-        setMessage("Only image files are allowed.");
-        return;
-      }
-      if (photoFile.size > 5 * 1024 * 1024) {
-        setMessage("Image must be under 5MB.");
-        return;
-      }
-      const formData = new FormData();
-      formData.append("file", photoFile);
-      const uploadRes = await api.post("/user/profile-photo", formData);
-      setProfile(uploadRes.data);
-      setPhotoFile(null);
-      setPhotoPreview("");
-      setMessage("Profile photo updated!");
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleSaveAccount = async () => {
+  const handleSaveChanges = async () => {
     try {
       if (!profile?.id) return;
       const payload = {
         username: username.trim()
       };
       const res = await api.put(`/user/${profile.id}`, payload);
-      setProfile(res.data);
-      setMessage("Account information updated.");
+      let updatedProfile = res.data;
+
+      if (photoFile) {
+        if (!photoFile.type.startsWith("image/")) {
+          setMessage("Only image files are allowed.");
+          return;
+        }
+        if (photoFile.size > 5 * 1024 * 1024) {
+          setMessage("Image must be under 5MB.");
+          return;
+        }
+        const formData = new FormData();
+        formData.append("file", photoFile);
+        const uploadRes = await api.post("/user/profile-photo", formData);
+        updatedProfile = uploadRes.data;
+        setPhotoFile(null);
+        setPhotoPreview("");
+      }
+
+      setProfile(updatedProfile);
+      setMessage("Profile updated successfully.");
     } catch (err) {
       setMessage(err?.message || "Failed to update profile.");
     }
@@ -180,9 +172,6 @@ export default function ProfilePage() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Username"
             />
-            <button className="btn btn-secondary" onClick={handleSaveAccount}>
-              Save Account Info
-            </button>
             <input
               className="input"
               type="file"
@@ -192,7 +181,7 @@ export default function ProfilePage() {
             {photoPreview && (
               <img src={photoPreview} alt="Preview" className="photo-preview" />
             )}
-            <button className="btn btn-primary" onClick={handleUpdate}>
+            <button className="btn btn-primary" onClick={handleSaveChanges}>
               Save Changes
             </button>
           </div>

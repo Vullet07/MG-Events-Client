@@ -1,13 +1,57 @@
 .home-grid {
   margin-top: 18px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 14px;
 }
 
 .home-links {
   margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.dashboard-hero {
   display: flex;
+  justify-content: space-between;
+  gap: 16px;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+}
+
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(80px, 1fr));
+  gap: 10px;
+}
+
+.stat-chip {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: grid;
+  text-align: center;
+}
+
+.stat-chip strong {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.stat-chip span {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.home-panel {
+  min-height: 220px;
+}
+
+@media (max-width: 760px) {
+  .dashboard-stats {
+    width: 100%;
+    grid-template-columns: repeat(3, 1fr);
+  }
 }

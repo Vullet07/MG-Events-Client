@@ -1,0 +1,24 @@
+.news-page {
+  display: grid;
+  gap: 14px;
+}
+
+.news-form {
+  display: grid;
+  gap: 10px;
+}
+
+.news-list {
+  display: grid;
+  gap: 10px;
+}
+
+.news-card {
+  display: grid;
+  gap: 8px;
+}
+
+.news-card h3,
+.news-card p {
+  margin: 0;
+}
