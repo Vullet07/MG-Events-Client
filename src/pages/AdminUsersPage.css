@@ -1,70 +1,120 @@
+﻿.admin-page {
+  gap: 12px;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .admin-toolbar {
-  margin: 18px 0;
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-tabs {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.admin-tabs .is-active {
+  border-color: #e699a7;
+  background: #ffe9ed;
 }
 
 .admin-grid {
   display: grid;
-  gap: 16px;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.admin-card {
+  display: grid;
+  gap: 10px;
 }
 
 .admin-card__header {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-start;
 }
 
 .admin-card__header h3 {
-  margin: 0 0 4px;
+  margin: 0;
+}
+
+.admin-card__header p {
+  margin: 4px 0 0;
+  font-size: 0.86rem;
 }
 
 .admin-card__meta {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin: 12px 0;
-}
-
-.admin-card__actions {
-  display: grid;
-  gap: 10px;
-}
-
-.admin-create-teacher {
-  margin: 14px 0;
-  display: grid;
-  gap: 10px;
-}
-
-.admin-reports {
-  margin-top: 16px;
-  display: grid;
-  gap: 10px;
-}
-
-.admin-report-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  border: 1px solid #f0dfe3;
-  border-radius: 12px;
-  padding: 10px;
-}
-
-.admin-report-actions {
   display: flex;
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.error-msg {
-  color: #e24b5b;
+.admin-card__actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.success-msg {
-  color: #1f9d55;
+.admin-card__actions .input,
+.admin-card__actions .pill {
+  grid-column: 1 / -1;
+}
+
+.admin-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-list h3 {
+  margin: 0;
+}
+
+.admin-list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  background: #fff;
+}
+
+.admin-list-item p {
+  margin: 4px 0;
+}
+
+.admin-list-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 920px) {
+  .admin-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-list-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-list-actions {
+    justify-content: flex-start;
+  }
 }

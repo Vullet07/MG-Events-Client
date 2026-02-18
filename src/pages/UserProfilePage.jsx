@@ -1,21 +1,24 @@
-import { useEffect, useState } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+﻿import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
 import api from "../api/api";
 import { formatDateTime } from "../utils/formatDateTime";
+import { toBgRole } from "../utils/localize";
 import "./UserProfilePage.css";
+
+const initialTabs = {
+  threads: { items: [], page: 1, totalPages: 1 },
+  posts: { items: [], page: 1, totalPages: 1 },
+  pins: { items: [], page: 1, totalPages: 1 }
+};
 
 export default function UserProfilePage() {
   const { id } = useParams();
   const location = useLocation();
+
   const [profile, setProfile] = useState(null);
   const [activeTab, setActiveTab] = useState("threads");
-  const [tabData, setTabData] = useState({
-    threads: { items: [], page: 1, totalPages: 1 },
-    posts: { items: [], page: 1, totalPages: 1 },
-    pins: { items: [], page: 1, totalPages: 1 }
-  });
+  const [tabData, setTabData] = useState(initialTabs);
   const [error, setError] = useState("");
-  const currentPage = tabData[activeTab].page;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -23,31 +26,40 @@ export default function UserProfilePage() {
         const res = await api.get(`/user/public/${id}`);
         setProfile(res.data);
       } catch (err) {
-        setError(err?.message || "Unable to load profile.");
+        setError(err?.response?.data?.message || err?.message || "Профилът не може да бъде зареден.");
       }
     };
+
     fetchProfile();
   }, [id]);
 
   useEffect(() => {
     const fetchTab = async () => {
+      const page = tabData[activeTab].page;
       try {
-        const res = await api.get(`/user/public/${id}/${activeTab}?page=${currentPage}&pageSize=6`);
+        const res = await api.get(`/user/public/${id}/${activeTab}?page=${page}&pageSize=6`);
         setTabData((prev) => ({
           ...prev,
           [activeTab]: {
             items: res.data?.items || [],
-            page: res.data?.page || currentPage,
+            page: res.data?.page || page,
             totalPages: res.data?.totalPages || 1
           }
         }));
       } catch (err) {
-        setError(err?.message || "Unable to load profile content.");
+        setError(err?.response?.data?.message || err?.message || "Съдържанието на профила не може да се зареди.");
       }
     };
 
     fetchTab();
-  }, [activeTab, id, currentPage]);
+  }, [activeTab, id, tabData[activeTab].page]);
+
+  const tab = tabData[activeTab];
+  const tabTitle = useMemo(() => {
+    if (activeTab === "threads") return "Теми";
+    if (activeTab === "posts") return "Публикации";
+    return "Маркери";
+  }, [activeTab]);
 
   const changePage = (nextPage) => {
     setTabData((prev) => ({
@@ -59,15 +71,9 @@ export default function UserProfilePage() {
     }));
   };
 
-  const setTab = (tab) => {
-    setActiveTab(tab);
-  };
-
-  const tab = tabData[activeTab];
-
   const renderTabItems = () => {
-    if (tab.items.length === 0) {
-      return <p className="muted">No {activeTab} yet.</p>;
+    if (!tab.items.length) {
+      return <p className="muted">Все още няма {tabTitle.toLowerCase()}.</p>;
     }
 
     if (activeTab === "threads") {
@@ -82,11 +88,9 @@ export default function UserProfilePage() {
     if (activeTab === "posts") {
       return tab.items.map((item) => (
         <Link key={item.postId} to={`/threads/${item.threadId}`} className="profile-item">
-          <strong>{item.title || item.threadTitle}</strong>
+          <strong>{item.title || item.threadTitle || "Публикация"}</strong>
           <p>{item.content}</p>
-          <span className="muted">
-            {formatDateTime(item.createdAt)} | Score {item.score}
-          </span>
+          <span className="muted">{formatDateTime(item.createdAt)}</span>
         </Link>
       ));
     }
@@ -95,75 +99,67 @@ export default function UserProfilePage() {
       <div key={item.pinId} className="profile-item">
         <strong>{item.title}</strong>
         {item.description && <p>{item.description}</p>}
-        <span className="muted">
-          {formatDateTime(item.createdAt)} | Score {item.score}
-        </span>
+        <span className="muted">{formatDateTime(item.createdAt)}</span>
       </div>
     ));
   };
 
   return (
-    <div className="page-shell">
-      <div className="card card-pad user-profile-card">
-        <div className="split-row">
-          <h2 className="section-title">User Profile</h2>
-          <Link to="/threads" className="btn btn-ghost">Back to Threads</Link>
-        </div>
+    <div className="page-shell user-profile-page">
+      {error && <p className="error-msg">{error}</p>}
 
-        {error && (
-          <div className="profile-restricted">
-            <p>{error}</p>
-            <p className="muted">
-              Some profile details may be restricted to admins.
-            </p>
-          </div>
-        )}
-
-        {profile && (
+      {profile && (
+        <section className="card card-pad user-profile-card">
           <div className="profile-content">
-            <img
-              src={profile.photoUrl || "/avatar-placeholder.svg"}
-              alt="Profile"
-            />
+            <div className="profile-avatar-wrap">
+              <img src={profile.photoUrl || "/avatar-placeholder.svg"} alt="Профил" />
+            </div>
             <div>
-              <h3>{profile.username}</h3>
+              <h2>{profile.username}</h2>
               <p className="muted">{profile.email}</p>
-              <span className="tag tag-secondary">{profile.role}</span>
+              <span className="tag tag-secondary">{toBgRole(profile.role)}</span>
               <p className="muted">
-                Threads: {profile.threadsCount || 0} | Posts: {profile.postsCount || 0} | Pins: {profile.pinsCount || 0}
+                Теми {profile.threadsCount || 0} - Публикации {profile.postsCount || 0} - Маркери {profile.pinsCount || 0}
               </p>
               <Link
-                to={`/report?type=User&id=${id}&label=${encodeURIComponent(profile.username)}&returnTo=${encodeURIComponent(location.pathname)}`}
-                className="btn btn-danger"
+                to={`/report?type=User&id=${id}&label=${encodeURIComponent(
+                  profile.username || "Потребител"
+                )}&returnTo=${encodeURIComponent(location.pathname)}`}
+                className="btn btn-danger btn-sm"
               >
-                Report User
+                Докладвай потребителя
               </Link>
             </div>
           </div>
-        )}
+        </section>
+      )}
 
-        <div className="profile-tabs">
-          <button
-            type="button"
-            className={`btn btn-ghost ${activeTab === "threads" ? "tab-active" : ""}`}
-            onClick={() => setTab("threads")}
-          >
-            Threads
-          </button>
-          <button
-            type="button"
-            className={`btn btn-ghost ${activeTab === "posts" ? "tab-active" : ""}`}
-            onClick={() => setTab("posts")}
-          >
-            Posts
-          </button>
-          <button
-            type="button"
-            className={`btn btn-ghost ${activeTab === "pins" ? "tab-active" : ""}`}
-            onClick={() => setTab("pins")}
-          >
-            Pins
-          </button>
+      <section className="card card-pad user-profile-content">
+        <div className="split-row">
+          <h3>{tabTitle}</h3>
+          <div className="profile-tabs">
+            <button
+              type="button"
+              className={`btn btn-ghost btn-sm ${activeTab === "threads" ? "tab-active" : ""}`}
+              onClick={() => setActiveTab("threads")}
+            >
+              Теми
+            </button>
+            <button
+              type="button"
+              className={`btn btn-ghost btn-sm ${activeTab === "posts" ? "tab-active" : ""}`}
+              onClick={() => setActiveTab("posts")}
+            >
+              Публикации
+            </button>
+            <button
+              type="button"
+              className={`btn btn-ghost btn-sm ${activeTab === "pins" ? "tab-active" : ""}`}
+              onClick={() => setActiveTab("pins")}
+            >
+              Маркери
+            </button>
+          </div>
         </div>
 
         <div className="profile-items">{renderTabItems()}</div>
@@ -171,25 +167,25 @@ export default function UserProfilePage() {
         <div className="profile-pagination">
           <button
             type="button"
-            className="btn btn-ghost"
+            className="btn btn-ghost btn-sm"
             disabled={tab.page <= 1}
             onClick={() => changePage(tab.page - 1)}
           >
-            Prev
+            Назад
           </button>
           <span className="pill">
-            Page {tab.page} / {tab.totalPages || 1}
+            Страница {tab.page} / {tab.totalPages || 1}
           </span>
           <button
             type="button"
-            className="btn btn-ghost"
+            className="btn btn-ghost btn-sm"
             disabled={tab.page >= (tab.totalPages || 1)}
             onClick={() => changePage(tab.page + 1)}
           >
-            Next
+            Напред
           </button>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

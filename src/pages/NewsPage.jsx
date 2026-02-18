@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
@@ -8,8 +8,11 @@ import "./NewsPage.css";
 export default function NewsPage() {
   const { user } = useAuth();
   const [news, setNews] = useState([]);
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [search, setSearch] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -18,9 +21,9 @@ export default function NewsPage() {
 
   const loadNews = async () => {
     try {
-      const threadsRes = await api.get("/forum-threads?page=1&pageSize=200");
+      const threadsRes = await api.get("/forum-threads?page=1&pageSize=300");
       const threads = threadsRes.data?.items || threadsRes.data || [];
-      const onlyNews = threads.filter((t) => t.title?.toLowerCase().startsWith("[news]"));
+      const onlyNews = threads.filter((thread) => thread.title?.toLowerCase().startsWith("[news]"));
 
       const withPreview = await Promise.all(
         onlyNews.map(async (thread) => {
@@ -37,9 +40,13 @@ export default function NewsPage() {
         })
       );
 
-      setNews(withPreview);
+      setNews(
+        withPreview.sort(
+          (a, b) => new Date(b.lastPostAt || b.createdAt) - new Date(a.lastPostAt || a.createdAt)
+        )
+      );
     } catch (err) {
-      setError(err?.message || "Failed to load news.");
+      setError(err?.response?.data?.message || err?.message || "Неуспешно зареждане на новините.");
     }
   };
 
@@ -47,16 +54,30 @@ export default function NewsPage() {
     loadNews();
   }, []);
 
+  const filteredNews = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return news;
+
+    return news.filter((item) => {
+      const titleMatch = item.title?.toLowerCase().includes(query);
+      const previewMatch = item.preview?.toLowerCase().includes(query);
+      const authorMatch = item.createdByUsername?.toLowerCase().includes(query);
+      return titleMatch || previewMatch || authorMatch;
+    });
+  }, [news, search]);
+
   const handlePublish = async (e) => {
     e.preventDefault();
+
     if (!title.trim() || !content.trim()) {
-      setError("Title and content are required.");
+      setError("Заглавие и съдържание са задължителни.");
       return;
     }
 
     setLoading(true);
     setError("");
     setMessage("");
+
     try {
       const threadRes = await api.post("/forum-threads", {
         title: `[News] ${title.trim()}`
@@ -64,17 +85,17 @@ export default function NewsPage() {
 
       const threadId = threadRes.data?.id;
       const formData = new FormData();
-      formData.append("title", "Announcement");
+      formData.append("title", "Съобщение");
       formData.append("content", content.trim());
       formData.append("threadId", String(threadId));
       await api.post("/ForumPosts", formData);
 
       setTitle("");
       setContent("");
-      setMessage("News published.");
+      setMessage("Новината е публикувана.");
       await loadNews();
     } catch (err) {
-      setError(err?.message || "Failed to publish news.");
+      setError(err?.response?.data?.message || err?.message || "Неуспешно публикуване на новина.");
     } finally {
       setLoading(false);
     }
@@ -82,31 +103,42 @@ export default function NewsPage() {
 
   return (
     <div className="page-shell news-page">
-      <div className="split-row">
+      <section className="card card-pad news-head">
         <div>
-          <h2 className="section-title">News</h2>
-          <p className="section-subtitle">Upcoming events and important announcements.</p>
+          <h2 className="section-title">Новини и съобщения</h2>
+          <p className="section-subtitle">Официални обновления от учители и администратори.</p>
         </div>
-        <Link to="/dashboard" className="btn btn-ghost">Back to Dashboard</Link>
-      </div>
+        <input
+          className="input news-search"
+          placeholder="Търси в новините"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </section>
 
       {canPublish && (
         <form className="card card-pad news-form" onSubmit={handlePublish}>
-          <h3>Publish Announcement</h3>
+          <div className="split-row">
+            <h3>Публикувай съобщение</h3>
+            <span className="pill">{content.length} знака</span>
+          </div>
+
           <input
             className="input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Event or announcement title"
+            placeholder="Заглавие"
           />
+
           <textarea
             className="textarea"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Write the announcement details..."
+            placeholder="Опиши съобщението..."
           />
+
           <button className="btn btn-primary" type="submit" disabled={loading}>
-            {loading ? "Publishing..." : "Publish"}
+            {loading ? "Публикуване..." : "Публикувай"}
           </button>
         </form>
       )}
@@ -114,21 +146,26 @@ export default function NewsPage() {
       {error && <p className="error-msg">{error}</p>}
       {message && <p className="success-msg">{message}</p>}
 
-      <div className="news-list">
-        {news.length === 0 ? (
+      <section className="news-list">
+        {filteredNews.length === 0 ? (
           <div className="card card-pad">
-            <p className="muted">No announcements yet.</p>
+            <p className="muted">Все още няма публикувани съобщения.</p>
           </div>
         ) : (
-          news.map((item) => (
+          filteredNews.map((item) => (
             <Link key={item.id} to={`/threads/${item.id}`} className="card card-pad news-card">
-              <h3>{item.title.replace(/^\[news\]\s*/i, "")}</h3>
+              <div className="split-row">
+                <h3>{item.title.replace(/^\[news\]\s*/i, "")}</h3>
+                <span className="pill">{formatDateTime(item.createdAt)}</span>
+              </div>
               {item.preview && <p>{item.preview}</p>}
-              <span className="muted">{formatDateTime(item.createdAt)}</span>
+              <span className="muted">От {item.createdByUsername || "Екип"}</span>
             </Link>
           ))
         )}
-      </div>
+      </section>
+
+      <Link to="/threads" className="btn btn-ghost btn-sm">Назад към темите</Link>
     </div>
   );
 }

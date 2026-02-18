@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { register } from "../api/authApi";
+﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { register } from "../api/authApi";
 import "./RegisterPage.css";
 
 export default function RegisterPage() {
@@ -10,79 +10,104 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate(); // for redirect after registration
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    if (!username || !email || !password || !confirmPassword) {
-      setError("All fields are required");
+    if (!username.trim() || !email.trim() || !password || !confirmPassword) {
+      setError("Всички полета са задължителни.");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError("Паролите не съвпадат.");
       return;
     }
 
+    setLoading(true);
     try {
-      await register({ username, email, password });
-      setSuccess("Registration successful! Redirecting to login...");
-      setTimeout(() => navigate("/login"), 2000); // redirect after 2s
+      await register({
+        username: username.trim(),
+        email: email.trim(),
+        password
+      });
+      setSuccess("Регистрацията е успешна. Пренасочване към вход...");
+      setTimeout(() => navigate("/login"), 1600);
     } catch (err) {
-      setError(err?.message || "Registration failed");
+      setError(err?.response?.data?.message || err?.message || "Неуспешна регистрация.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="register-container">
-      <form className="register-form" onSubmit={handleSubmit}>
-        <h2 className="register-title">Register</h2>
+    <div className="auth-layout">
+      <aside className="auth-panel">
+        <h1>Създай ученически профил.</h1>
+        <p>
+          Присъедини се към дискусиите, поставяй маркери и участвай в
+          координацията на училищната общност.
+        </p>
+        <ul className="auth-list">
+          <li>Следи сигнали чрез карта и снимки.</li>
+          <li>Отговаряй във форумни теми с вложени коментари.</li>
+          <li>Подай сигнал за неподходящо съдържание.</li>
+        </ul>
+      </aside>
+
+      <form className="auth-card" onSubmit={handleSubmit}>
+        <h2>Регистрация за ученик</h2>
+        <p className="muted">Създай профил само за минута.</p>
 
         {error && <p className="error-msg">{error}</p>}
         {success && <p className="success-msg">{success}</p>}
 
         <input
           type="text"
-          placeholder="Username"
-          className="register-input"
+          placeholder="Потребителско име"
+          className="input"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
 
         <input
           type="email"
-          placeholder="Email"
-          className="register-input"
+          placeholder="Имейл"
+          className="input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
         <input
           type="password"
-          placeholder="Password"
-          className="register-input"
+          placeholder="Парола"
+          className="input"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
         <input
           type="password"
-          placeholder="Confirm Password"
-          className="register-input"
+          placeholder="Потвърди паролата"
+          className="input"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
 
-        <button type="submit" className="register-btn">
-          Register
+        <button type="submit" className="btn btn-primary" disabled={loading}>
+          {loading ? "Създаване..." : "Създай профил"}
         </button>
 
-        <div className="register-footer">
-          Already have an account? <Link to="/login">Login</Link>
+        <div className="auth-footer">
+          Вече имаш профил? <Link to="/login" className="link">Вход</Link>
+          <div>
+            Заявка за учителски профил: <Link to="/teacher-register" className="link">Кандидатствай тук</Link>
+          </div>
         </div>
       </form>
     </div>

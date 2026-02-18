@@ -1,12 +1,5 @@
-.report-card {
-  max-width: 720px;
-  margin: 0 auto;
-}
-
-.error-msg {
-  color: #e24b5b;
-}
-
-.success-msg {
-  color: #1f9d55;
+﻿.report-card {
+  max-width: 780px;
+  display: grid;
+  gap: 10px;
 }

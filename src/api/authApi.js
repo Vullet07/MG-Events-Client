@@ -10,6 +10,11 @@ export const register = async (data) => {
   return res.data;
 };
 
+export const registerTeacherRequest = async (data) => {
+  const res = await api.post("/Auth/register-teacher-request", data);
+  return res.data;
+};
+
 export const logout = () => {
   localStorage.removeItem("token");
 };

@@ -1,0 +1,42 @@
+.my-reports-page {
+  gap: 12px;
+}
+
+.my-reports-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.my-reports-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.my-reports-stats article {
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+
+.my-reports-stats strong {
+  font-size: 1.3rem;
+  color: #941224;
+}
+
+.my-reports-stats span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.my-report-item p {
+  margin: 4px 0;
+}
+
+.my-report-skeleton-title {
+  width: 62%;
+  height: 16px;
+}

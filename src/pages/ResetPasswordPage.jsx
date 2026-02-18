@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import api from "../api/api";
 import "./ForgotPasswordPage.css";
@@ -12,6 +12,7 @@ export default function ResetPasswordPage() {
   const query = useQuery();
   const token = query.get("token") || "";
   const navigate = useNavigate();
+
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState("");
@@ -24,19 +25,19 @@ export default function ResetPasswordPage() {
     setStatus("");
 
     if (!token) {
-      setError("Missing reset token.");
+      setError("Липсва токен за възстановяване.");
       return;
     }
     if (!password || !confirm) {
-      setError("Please fill in both password fields.");
+      setError("Моля, попълни и двете полета за парола.");
       return;
     }
     if (password !== confirm) {
-      setError("Passwords do not match.");
+      setError("Паролите не съвпадат.");
       return;
     }
     if (password.length < 8 || !/[A-Z]/.test(password) || !/\d/.test(password)) {
-      setError("Password must be 8+ chars, include 1 uppercase letter and 1 digit.");
+      setError("Паролата трябва да е поне 8 символа, с 1 главна буква и 1 цифра.");
       return;
     }
 
@@ -46,7 +47,7 @@ export default function ResetPasswordPage() {
         token,
         newPassword: password
       });
-      setStatus(res?.data || "Password reset successfully.");
+      setStatus(res?.data || "Паролата е сменена успешно.");
       setPassword("");
       setConfirm("");
       setTimeout(() => navigate("/login"), 1200);
@@ -55,43 +56,50 @@ export default function ResetPasswordPage() {
       const validation =
         err?.response?.data?.errors &&
         Object.values(err.response.data.errors).flat().join(" ");
-      setError(apiMessage || validation || err?.message || "Failed to reset password.");
+      setError(apiMessage || validation || err?.message || "Неуспешна смяна на паролата.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-shell">
-      <form className="auth-card" onSubmit={handleSubmit}>
-        <h2>Reset Password</h2>
-        <p className="muted">
-          Set a new password for your account.
+    <div className="auth-layout auth-layout--single">
+      <aside className="auth-panel">
+        <h1>Създай нова парола.</h1>
+        <p>
+          Използвай минимум 8 символа, включително главна буква и цифра.
         </p>
+      </aside>
+
+      <form className="auth-card" onSubmit={handleSubmit}>
+        <h2>Смяна на парола</h2>
+        <p className="muted">Въведи новата парола за профила си.</p>
+
         {error && <p className="error-msg">{error}</p>}
         {status && <p className="success-msg">{status}</p>}
+
         <input
           className="input"
           type="password"
-          placeholder="New password"
+          placeholder="Нова парола"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <small className="muted">
-          Must be at least 8 characters, with 1 uppercase letter and 1 digit.
-        </small>
+
         <input
           className="input"
           type="password"
-          placeholder="Confirm password"
+          placeholder="Потвърди паролата"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
         />
+
         <button className="btn btn-primary" type="submit" disabled={loading}>
-          {loading ? "Saving..." : "Reset Password"}
+          {loading ? "Записване..." : "Смени паролата"}
         </button>
+
         <div className="auth-footer">
-          <Link to="/login" className="link">Back to login</Link>
+          <Link to="/login" className="link">Назад към вход</Link>
         </div>
       </form>
     </div>

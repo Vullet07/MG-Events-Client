@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/api";
 import "./ForgotPasswordPage.css";
@@ -15,43 +15,52 @@ export default function ForgotPasswordPage() {
     setStatus("");
 
     if (!email.trim()) {
-      setError("Please enter your email.");
+      setError("Моля, въведи имейл адрес.");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await api.post("/auth/forgot-password", { email });
-      setStatus(res?.data || "If the email exists, a reset link was sent.");
+      const res = await api.post("/auth/forgot-password", { email: email.trim() });
+      setStatus(res?.data || "Ако имейлът съществува, е изпратен линк за смяна на паролата.");
       setEmail("");
     } catch (err) {
-      setError(err?.message || "Failed to send reset email.");
+      setError(err?.response?.data?.message || err?.message || "Неуспешно изпращане на имейл за възстановяване.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-shell">
-      <form className="auth-card" onSubmit={handleSubmit}>
-        <h2>Forgot Password</h2>
-        <p className="muted">
-          Enter your email and we’ll send a reset link.
+    <div className="auth-layout auth-layout--single">
+      <aside className="auth-panel">
+        <h1>Смени паролата сигурно.</h1>
+        <p>
+          Въведи имейла на профила и ще изпратим защитен линк за нулиране.
         </p>
+      </aside>
+
+      <form className="auth-card" onSubmit={handleSubmit}>
+        <h2>Забравена парола</h2>
+        <p className="muted">Линкът за смяна ще бъде изпратен в пощата ти.</p>
+
         {error && <p className="error-msg">{error}</p>}
         {status && <p className="success-msg">{status}</p>}
+
         <input
           className="input"
           type="email"
-          placeholder="Email address"
+          placeholder="Имейл адрес"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
+
         <button className="btn btn-primary" type="submit" disabled={loading}>
-          {loading ? "Sending..." : "Send Reset Link"}
+          {loading ? "Изпращане..." : "Изпрати линк"}
         </button>
+
         <div className="auth-footer">
-          <Link to="/login" className="link">Back to login</Link>
+          <Link to="/login" className="link">Назад към вход</Link>
         </div>
       </form>
     </div>

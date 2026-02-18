@@ -1,6 +1,12 @@
-.news-page {
+﻿.news-page {
+  gap: 12px;
+}
+
+.news-head {
   display: grid;
-  gap: 14px;
+  grid-template-columns: 1fr minmax(220px, 320px);
+  gap: 10px;
+  align-items: center;
 }
 
 .news-form {
@@ -8,17 +14,34 @@
   gap: 10px;
 }
 
+.news-form h3 {
+  margin: 0;
+}
+
 .news-list {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 10px;
 }
 
 .news-card {
   display: grid;
   gap: 8px;
+  border-radius: 16px;
 }
 
 .news-card h3,
 .news-card p {
   margin: 0;
+}
+
+.news-card p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 860px) {
+  .news-head {
+    grid-template-columns: 1fr;
+  }
 }

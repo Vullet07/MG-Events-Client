@@ -1,37 +1,79 @@
-.threads-toolbar {
-  margin: 12px 0;
+﻿.threads-page {
+  gap: 12px;
 }
 
-.threads-actions {
+.threads-head {
   display: flex;
-  align-items: center;
+  justify-content: space-between;
   gap: 12px;
+  align-items: center;
   flex-wrap: wrap;
 }
 
-.user-chip {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: #fff;
-  border: 1px solid #e4e7ef;
-  font-size: 12px;
-  font-weight: 600;
+.threads-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.threads-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.threads-stats article {
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+
+.threads-stats strong {
+  font-size: 1.35rem;
+  color: #941224;
+}
+
+.threads-stats span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.threads-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 190px 200px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.threads-view-toggle {
+  display: inline-flex;
+  gap: 6px;
+  justify-self: end;
+}
+
+.threads-view-toggle .is-active {
+  border-color: #e895a3;
+  background: #ffe9ed;
 }
 
 .threads-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.threads-grid--list {
+  grid-template-columns: 1fr;
 }
 
 .thread-card {
   background: #fff;
-  border: 1px solid #e4e7ef;
-  border-radius: 18px;
-  padding: 16px;
-  box-shadow: 0 10px 24px rgba(120, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 12px 24px rgba(120, 0, 0, 0.08);
+  display: grid;
   gap: 8px;
 }
 
@@ -39,19 +81,13 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .thread-card h3 {
   margin: 0;
-  font-size: 18px;
-}
-
-.thread-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 14px;
+  font-size: 1.02rem;
+  line-height: 1.2;
 }
 
 .thread-badges {
@@ -60,13 +96,47 @@
   flex-wrap: wrap;
 }
 
+.thread-card__author {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #901122;
+  font-weight: 600;
+}
+
+.thread-meta {
+  display: grid;
+  gap: 4px;
+  font-size: 0.82rem;
+}
+
 .thread-actions {
-  margin-top: auto;
+  margin-top: 2px;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.empty-state {
-  text-align: center;
+.thread-skeleton-title {
+  width: 70%;
+  height: 18px;
+}
+
+.thread-skeleton-btn {
+  width: 108px;
+  height: 35px;
+  border-radius: 999px;
+}
+
+@media (max-width: 980px) {
+  .threads-stats {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+
+  .threads-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .threads-view-toggle {
+    justify-self: start;
+  }
 }
