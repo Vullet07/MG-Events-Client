@@ -56,6 +56,23 @@ h3 {
   padding: 6px;
 }
 
+.app-loader-shell {
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.app-loader-card {
+  width: min(100%, 420px);
+  gap: 14px;
+  display: grid;
+}
+
+.app-loader-title {
+  height: 26px;
+  width: min(72%, 260px);
+}
+
 .card {
   background: var(--bg-elevated);
   border-radius: var(--radius);

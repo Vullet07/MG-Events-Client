@@ -1,17 +1,20 @@
 ﻿import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/api";
+import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import "./CreateThreadPage.css";
 
 export default function CreateThreadPage() {
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const toast = useToast();
   const navigate = useNavigate();
+  const canPublishNews = user?.role === "Admin" || user?.role === "Teacher";
 
   useEffect(() => {
     const prefilledTitle = searchParams.get("title");
@@ -26,6 +29,11 @@ export default function CreateThreadPage() {
 
     if (!title.trim()) {
       setError("Заглавието е задължително.");
+      return;
+    }
+
+    if (/^\s*\[news\]\b/i.test(title) && !canPublishNews) {
+      setError("Само учители и администратори могат да публикуват новини.");
       return;
     }
 

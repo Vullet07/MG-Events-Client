@@ -1,17 +1,17 @@
-﻿.map-page {
+.map-page {
   padding-top: 2px;
 }
 
-.map-layout {
+.map-layout-indoor {
   display: grid;
-  grid-template-columns: minmax(300px, 380px) minmax(360px, 1fr);
-  gap: 10px;
+  grid-template-columns: minmax(340px, 410px) minmax(0, 1fr);
+  gap: 12px;
   align-items: start;
 }
 
 .map-panel {
   display: grid;
-  gap: 11px;
+  gap: 12px;
   max-height: calc(100vh - 128px);
   overflow: auto;
 }
@@ -21,38 +21,467 @@
   font-size: 1rem;
 }
 
-.map-canvas {
-  overflow: hidden;
-  border-radius: 20px;
-  border: 1px solid var(--line);
+.map-level-controls {
+  display: grid;
+  gap: 10px;
+  background: linear-gradient(180deg, #fff8f9 0%, #fff 100%);
 }
 
-.map-view {
+.map-tab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.map-canvas-indoor {
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  min-height: calc(100vh - 128px);
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  overscroll-behavior: contain;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(193, 18, 31, 0.05), transparent 28%),
+    radial-gradient(circle at 90% 12%, rgba(141, 19, 32, 0.05), transparent 26%),
+    linear-gradient(180deg, #fff9f9 0%, #fff6f7 100%);
+}
+
+.map-canvas-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.map-canvas-header h3,
+.map-canvas-header p {
+  margin: 0;
+}
+
+.map-zoom-controls {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.map-zoom-controls span {
+  min-width: 54px;
+  text-align: center;
+  font-weight: 700;
+  color: #871524;
+}
+
+.map-svg {
   width: 100%;
-  height: calc(100vh - 126px);
-  min-height: 480px;
+  height: 100%;
+  min-height: 560px;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+.map-svg:active {
+  cursor: grabbing;
+}
+
+.map-canvas-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 10px 16px 0;
+  color: #5d1824;
+  font-size: 0.82rem;
+}
+
+.map-canvas-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: inline-block;
+}
+
+.legend-swatch-asphalt {
+  background: #8b9198;
+}
+
+.legend-swatch-green {
+  background: #b9ddd0;
+}
+
+.legend-swatch-court {
+  background: #d85a65;
+}
+
+.legend-swatch-building {
+  background: #ffffff;
+}
+
+.indoor-grid-bg {
+  fill: #fcfaf9;
+}
+
+.indoor-yard {
+  fill: rgba(255, 255, 255, 0.78);
+  stroke: rgba(193, 18, 31, 0.16);
+  stroke-width: 2;
+}
+
+.campus-asphalt {
+  fill: rgba(127, 135, 144, 0.56);
+  stroke: rgba(129, 32, 41, 0.78);
+  stroke-width: 3.4;
+  stroke-linejoin: round;
+  stroke-dasharray: 10 8;
+}
+
+.campus-green {
+  fill: rgba(182, 216, 228, 0.9);
+  stroke: rgba(88, 133, 149, 0.42);
+  stroke-width: 1.2;
+}
+
+.campus-court {
+  fill: rgba(216, 90, 101, 0.88);
+  stroke: rgba(255, 255, 255, 0.72);
+  stroke-width: 1.5;
+}
+
+.campus-court-small {
+  fill: rgba(220, 110, 118, 0.8);
+}
+
+.campus-court-mark,
+.campus-court-arc {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.76);
+  stroke-width: 1.25;
+}
+
+.campus-road {
+  fill: rgba(110, 116, 122, 0.44);
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-width: 1;
+}
+
+.campus-parking {
+  fill: rgba(209, 214, 218, 0.5);
+  stroke: rgba(255, 255, 255, 0.72);
+  stroke-width: 1.3;
+}
+
+.campus-parking-mark {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.68);
+  stroke-width: 1.1;
+}
+
+.campus-parking-mark.soft {
+  opacity: 0.72;
+}
+
+.campus-main-outline {
+  fill: none;
+  stroke: rgba(203, 39, 58, 0.78);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.indoor-building-main,
+.indoor-building-small,
+.indoor-floor-shell {
+  fill: rgba(255, 255, 255, 0.92);
+  stroke: rgba(141, 19, 32, 0.3);
+  stroke-width: 2;
+}
+
+.indoor-building-main,
+.indoor-building-small {
+  cursor: pointer;
+  transition: fill 0.2s ease, stroke 0.2s ease, filter 0.2s ease;
+}
+
+.campus-nav-group {
+  cursor: pointer;
+}
+
+.campus-main-footprint {
+  fill: rgba(255, 255, 255, 0.96);
+}
+
+.indoor-building-main:hover,
+.indoor-building-small:hover {
+  fill: rgba(255, 242, 244, 0.98);
+  filter: drop-shadow(0 10px 18px rgba(125, 5, 27, 0.18));
+}
+
+.campus-nav-group:hover .campus-main-outline {
+  stroke: rgba(193, 18, 31, 0.92);
+  stroke-width: 2.8;
+}
+
+.indoor-corridor {
+  fill: rgba(255, 244, 246, 0.84);
+  stroke: rgba(193, 18, 31, 0.18);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+}
+
+.floor-frame-panel {
+  fill: rgba(255, 255, 255, 0.72);
+  stroke: rgba(193, 18, 31, 0.1);
+  stroke-width: 1.3;
+}
+
+.indoor-floor-hull {
+  fill: rgba(248, 236, 237, 0.62);
+  stroke: rgba(185, 28, 28, 0.34);
+  stroke-width: 2.3;
+  stroke-linejoin: round;
+}
+
+.indoor-title-label,
+.indoor-floor-title {
+  fill: #58131d;
+  font-weight: 800;
+  font-size: 24px;
+}
+
+.indoor-floor-subtitle,
+.indoor-campus-subtitle {
+  fill: #8a4a58;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.indoor-campus-title {
+  fill: #4d1019;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.indoor-campus-label {
+  fill: #4e1520;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.indoor-campus-label-soft {
+  fill: rgba(78, 21, 32, 0.74);
+  font-size: 10px;
+}
+
+.indoor-hint-label {
+  fill: #8d4d59;
+  font-size: 12px;
+}
+
+.room-shape {
+  stroke: rgba(137, 24, 34, 0.35);
+  stroke-width: 1.6;
+  cursor: pointer;
+  transition: fill 0.18s ease, stroke 0.18s ease, filter 0.18s ease;
+}
+
+.campus-zone-hitbox {
+  fill: transparent;
+  stroke: rgba(129, 32, 41, 0.08);
+  stroke-width: 1;
+  transition: fill 0.18s ease, stroke 0.18s ease;
+}
+
+.room-class {
+  fill: rgba(255, 255, 255, 0.94);
+}
+
+.room-special {
+  fill: rgba(255, 224, 228, 0.92);
+}
+
+.room-lab {
+  fill: rgba(255, 213, 220, 0.92);
+}
+
+.room-zone {
+  fill: rgba(250, 240, 242, 0.86);
+}
+
+.room-selected {
+  stroke: rgba(193, 18, 31, 0.88);
+  stroke-width: 2.6;
+}
+
+.room-shape:hover {
+  stroke: rgba(193, 18, 31, 0.72);
+  stroke-width: 2.1;
+  filter: drop-shadow(0 8px 14px rgba(125, 5, 27, 0.12));
+}
+
+.room-zone:hover {
+  fill: rgba(255, 231, 236, 0.96);
+}
+
+.room-special:hover,
+.room-lab:hover {
+  fill: rgba(255, 214, 221, 0.96);
+}
+
+.room-class:hover {
+  fill: rgba(255, 245, 246, 0.98);
+}
+
+.campus-zone-hitbox:hover {
+  fill: rgba(193, 18, 31, 0.08);
+  stroke: rgba(193, 18, 31, 0.32);
+}
+
+.room-label {
+  fill: #381217;
+  font-size: 12px;
+  font-weight: 700;
+  dominant-baseline: middle;
+  pointer-events: none;
+  stroke: rgba(255, 255, 255, 0.92);
+  stroke-width: 3px;
+  paint-order: stroke fill;
+}
+
+.room-label-sub {
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.room-label-campus {
+  font-size: 11px;
+}
+
+.map-pin {
+  cursor: pointer;
+  filter: drop-shadow(0 6px 10px rgba(107, 23, 34, 0.18));
+}
+
+.pin-hit,
+.pin-cluster-hit {
+  fill: transparent;
+}
+
+.pin-ring {
+  fill: rgba(255, 255, 255, 0.92);
+  stroke-width: 2;
+}
+
+.pin-core {
+  fill: rgba(193, 18, 31, 0.92);
+  stroke: rgba(255, 255, 255, 0.96);
+  stroke-width: 2;
+}
+
+.marker-high .pin-ring {
+  stroke: #a40d1f;
+}
+
+.marker-mid .pin-ring {
+  stroke: #d14f63;
+}
+
+.marker-low .pin-ring {
+  stroke: #7f6a70;
+}
+
+.map-pin.is-active .pin-core {
+  fill: #7a0817;
+}
+
+.pin-stack {
+  fill: #4c1018;
+  font-size: 10px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.pin-cluster {
+  cursor: pointer;
+}
+
+.pin-cluster circle {
+  fill: rgba(193, 18, 31, 0.96);
+  stroke: rgba(255, 255, 255, 0.96);
+  stroke-width: 2;
+}
+
+.pin-cluster text {
+  fill: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.pin-cluster-room circle:not(.pin-cluster-hit) {
+  fill: rgba(139, 8, 28, 0.98);
+}
+
+.pin-cluster-room.is-active circle:not(.pin-cluster-hit) {
+  stroke: rgba(255, 244, 247, 0.98);
+  stroke-width: 3;
+}
+
+.map-pin-selection circle:first-child {
+  fill: rgba(193, 18, 31, 0.08);
+  stroke: rgba(193, 18, 31, 0.88);
+  stroke-width: 2;
+}
+
+.map-pin-selection circle:last-child {
+  fill: rgba(193, 18, 31, 0.9);
 }
 
 .selected-coords {
   font-size: 0.82rem;
   color: var(--muted);
-  border-radius: 10px;
+  border-radius: 12px;
   background: #fff4f6;
   border: 1px solid var(--line);
   padding: 8px 10px;
 }
 
-.map-created-flow {
-  border: 1px solid var(--line);
+.map-legacy-note {
+  border: 1px solid rgba(191, 80, 96, 0.26);
+  background: linear-gradient(180deg, #fff7f8 0%, #fff2f4 100%);
+  color: #6b1d2a;
   border-radius: 14px;
-  background: #fff7f8;
-  padding: 10px;
-  display: grid;
-  gap: 8px;
+  padding: 10px 12px;
+  font-size: 0.84rem;
 }
 
+.map-created-flow,
+.map-cluster-card,
+.map-filters,
+.map-active-pin,
+.map-room-directory,
+.map-pin-explorer,
+
 .map-created-flow h3,
-.map-created-flow p {
+.map-created-flow p,
+.map-active-pin h3,
+.map-active-pin p {
   margin: 0;
 }
 
@@ -63,12 +492,7 @@
 }
 
 .map-filters {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 10px;
-  background: #fff;
-  display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .map-score-label {
@@ -84,43 +508,126 @@
   color: var(--muted);
 }
 
-.map-top-pins {
+.map-cluster-list {
   display: grid;
-  gap: 7px;
+  gap: 8px;
 }
 
+.map-room-directory__list {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.map-pin-explorer__list {
+  display: grid;
+  gap: 8px;
+  max-height: 300px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+
+
+
+
+.map-pin-explorer__item {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: left;
+  display: grid;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.map-pin-explorer__item strong {
+  display: block;
+  color: #55111d;
+}
+
+.map-pin-explorer__item:hover,
+.map-pin-explorer__item.is-active {
+  border-color: #da7284;
+  background: #fff1f4;
+}
+
+.map-pin-explorer__meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.map-room-entry {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.map-room-entry strong {
+  display: block;
+  color: #55111d;
+}
+
+.map-room-entry span {
+  display: block;
+  font-size: 0.8rem;
+}
+
+.map-room-entry:hover,
+.map-room-entry.is-active {
+  border-color: #da7284;
+  background: #fff1f4;
+}
+
+.map-cluster-item,
 .map-top-pin {
   border: 1px solid var(--line);
   background: #fff;
   border-radius: 12px;
-  padding: 8px 10px;
+  padding: 9px 10px;
   text-align: left;
   cursor: pointer;
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 
+.map-cluster-item:hover,
 .map-top-pin:hover {
   border-color: #e59daa;
   background: #fff3f5;
 }
 
-.pin-popup {
+.map-cluster-item strong,
+.map-top-pin strong {
+  color: #55111d;
+}
+
+.map-cluster-item span,
+.map-top-pin span {
+  font-size: 0.8rem;
+}
+
+.map-top-pins {
   display: grid;
   gap: 8px;
-  min-width: 220px;
 }
 
-.pin-popup h3,
-.pin-popup p {
-  margin: 0;
-}
-
-.pin-popup img {
+.map-active-pin img {
   width: 100%;
-  max-height: 180px;
+  max-height: 220px;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid var(--line);
 }
 
@@ -131,17 +638,36 @@
   flex-wrap: wrap;
 }
 
-@media (max-width: 1060px) {
-  .map-layout {
+@media (max-width: 1080px) {
+  .map-layout-indoor {
     grid-template-columns: 1fr;
+  }
+
+  .map-canvas-indoor {
+    order: -1;
   }
 
   .map-panel {
     max-height: none;
   }
 
-  .map-view {
-    height: 64vh;
-    min-height: 420px;
+  .map-canvas-indoor {
+    min-height: 640px;
+  }
+}
+
+@media (max-width: 760px) {
+
+  .map-canvas-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .map-canvas-legend {
+    padding-top: 2px;
+  }
+
+  .map-svg {
+    min-height: 460px;
   }
 }

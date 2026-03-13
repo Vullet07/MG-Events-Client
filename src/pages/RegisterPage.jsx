@@ -39,7 +39,7 @@ export default function RegisterPage() {
       setSuccess("Регистрацията е успешна. Пренасочване към вход...");
       setTimeout(() => navigate("/login"), 1600);
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || "Неуспешна регистрация.");
+      setError(err?.apiMessage || err?.message || "Неуспешна регистрация.");
     } finally {
       setLoading(false);
     }

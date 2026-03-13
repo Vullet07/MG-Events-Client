@@ -1,7 +1,38 @@
 import axios from "axios";
 
+const API_BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL || "https://localhost:7277/api").trim();
+
+export const getApiErrorMessage = (error, fallback = "Request failed.") => {
+  const payload = error?.response?.data;
+
+  if (typeof payload === "string" && payload.trim()) {
+    return payload.trim();
+  }
+
+  if (payload?.message) {
+    return payload.message;
+  }
+
+  if (payload?.errors && typeof payload.errors === "object") {
+    const messages = Object.values(payload.errors)
+      .flatMap((value) => (Array.isArray(value) ? value : [value]))
+      .filter(Boolean);
+
+    if (messages.length > 0) {
+      return messages.join(" ");
+    }
+  }
+
+  if (payload?.title) {
+    return payload.title;
+  }
+
+  return error?.message || fallback;
+};
+
 const api = axios.create({
-  baseURL: "https://localhost:7277/api", // match your backend
+  baseURL: API_BASE_URL,
   headers: {}
 });
 
@@ -36,8 +67,10 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    error.apiMessage = getApiErrorMessage(error);
+
     if (error.response?.status === 403) {
-      const message = error.response?.data?.message || "";
+      const message = error.apiMessage || "";
       if (message.toLowerCase().includes("banned")) {
         localStorage.removeItem("token");
         window.location.href = "/login?banned=1";

@@ -40,7 +40,7 @@ export default function TeacherRegisterPage() {
       setSuccess("Заявката е изпратена. Необходимо е одобрение от администратор.");
       setTimeout(() => navigate("/login"), 1800);
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || "Неуспешно изпращане на заявка.");
+      setError(err?.apiMessage || err?.message || "Неуспешно изпращане на заявка.");
     } finally {
       setLoading(false);
     }

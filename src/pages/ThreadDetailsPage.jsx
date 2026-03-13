@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { MessageSquarePlus, Minus, Plus, RotateCcw, ShieldAlert, X } from "lucide-react";
+import { Minus, Plus, RotateCcw, X } from "lucide-react";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -516,27 +516,6 @@ export default function ThreadDetailsPage() {
           </button>
         </form>
       )}
-
-      <div className="thread-sticky-actions">
-        {!thread.isLocked && user && (
-          <button className="btn btn-primary" type="button" onClick={scrollToReplyForm}>
-            <MessageSquarePlus size={15} />
-            Отговор
-          </button>
-        )}
-        <Link
-          className="btn btn-danger"
-          to={`/report?type=Thread&id=${thread.id}&label=${encodeURIComponent(
-            thread.title || "Тема"
-          )}&returnTo=${encodeURIComponent(reportReturnTo)}`}
-        >
-          <ShieldAlert size={15} />
-          Докладвай
-        </Link>
-        <Link className="btn btn-ghost" to="/threads">
-          Към темите
-        </Link>
-      </div>
 
       {activeImage && (
         <div className="image-modal" onClick={closeImageModal}>

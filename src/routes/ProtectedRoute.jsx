@@ -1,10 +1,11 @@
 ﻿import { Navigate } from "react-router-dom";
+import AppLoader from "../components/ui/AppLoader";
 import { useAuth } from "../context/AuthContext";
 
 export default function ProtectedRoute({ children, role }) {
   const { isAuthenticated, user, loading } = useAuth();
 
-  if (loading) return <p>Зареждане...</p>;
+  if (loading) return <AppLoader label="Проверяваме достъпа..." />;
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

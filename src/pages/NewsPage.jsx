@@ -69,6 +69,12 @@ export default function NewsPage() {
   const handlePublish = async (e) => {
     e.preventDefault();
 
+    if (!canPublish) {
+      setError("Само учители и администратори могат да публикуват новини.");
+      setMessage("");
+      return;
+    }
+
     if (!title.trim() || !content.trim()) {
       setError("Заглавие и съдържание са задължителни.");
       return;
@@ -146,20 +152,24 @@ export default function NewsPage() {
       {error && <p className="error-msg">{error}</p>}
       {message && <p className="success-msg">{message}</p>}
 
-      <section className="news-list">
+      <section className="news-feed">
         {filteredNews.length === 0 ? (
           <div className="card card-pad">
             <p className="muted">Все още няма публикувани съобщения.</p>
           </div>
         ) : (
           filteredNews.map((item) => (
-            <Link key={item.id} to={`/threads/${item.id}`} className="card card-pad news-card">
-              <div className="split-row">
-                <h3>{item.title.replace(/^\[news\]\s*/i, "")}</h3>
-                <span className="pill">{formatDateTime(item.createdAt)}</span>
+            <Link key={item.id} to={`/threads/${item.id}`} className="news-feed-card">
+              <div className="news-feed-card__meta">
+                <span className="tag">Официално</span>
+                <span className="muted">{formatDateTime(item.createdAt)}</span>
               </div>
+              <h3>{item.title.replace(/^\[news\]\s*/i, "")}</h3>
               {item.preview && <p>{item.preview}</p>}
-              <span className="muted">От {item.createdByUsername || "Екип"}</span>
+              <div className="news-feed-card__footer">
+                <span className="muted">От {item.createdByUsername || "Екип"}</span>
+                <span className="news-feed-card__cta">Отвори темата</span>
+              </div>
             </Link>
           ))
         )}

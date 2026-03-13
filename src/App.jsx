@@ -17,12 +17,13 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import AppShell from "./components/AppShell";
+import AppLoader from "./components/ui/AppLoader";
 import { useAuth } from "./context/AuthContext";
 
 function EntryPage() {
   const { isAuthenticated, loading } = useAuth();
 
-  if (loading) return <p>Зареждане...</p>;
+  if (loading) return <AppLoader label="Подготвяме твоя профил..." />;
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
   return <LoginPage />;
 }

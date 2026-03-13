@@ -18,7 +18,6 @@ export default function ThreadsListPage() {
   const [filter, setFilter] = useState(searchParams.get("search") || "");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("recent");
-  const [viewMode, setViewMode] = useState("grid");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -149,34 +148,20 @@ export default function ThreadsListPage() {
           <option value="oldest">Най-стари първо</option>
           <option value="title">По азбучен ред</option>
         </select>
-
-        <div className="threads-view-toggle">
-          <button
-            type="button"
-            className={`btn btn-ghost btn-sm ${viewMode === "grid" ? "is-active" : ""}`}
-            onClick={() => setViewMode("grid")}
-          >
-            Решетка
-          </button>
-          <button
-            type="button"
-            className={`btn btn-ghost btn-sm ${viewMode === "list" ? "is-active" : ""}`}
-            onClick={() => setViewMode("list")}
-          >
-            Списък
-          </button>
-        </div>
       </section>
 
       {error && <p className="error-msg">{error}</p>}
 
       {loading ? (
-        <section className={`threads-grid ${viewMode === "list" ? "threads-grid--list" : ""}`}>
+        <section className="threads-feed">
           {Array.from({ length: 6 }).map((_, index) => (
-            <article key={index} className="thread-card">
-              <Skeleton className="thread-skeleton-title" />
-              <SkeletonLines lines={3} />
-              <div className="thread-actions">
+            <article key={index} className="thread-feed-card">
+              <div className="thread-feed-card__status" />
+              <div className="thread-feed-card__body">
+                <Skeleton className="thread-skeleton-title" />
+                <SkeletonLines lines={3} />
+              </div>
+              <div className="thread-actions thread-actions--feed">
                 <Skeleton className="thread-skeleton-btn" />
                 <Skeleton className="thread-skeleton-btn" />
               </div>
@@ -191,29 +176,45 @@ export default function ThreadsListPage() {
           actionTo="/create-thread"
         />
       ) : (
-        <section className={`threads-grid ${viewMode === "list" ? "threads-grid--list" : ""}`}>
+        <section className="threads-feed">
           {filteredThreads.map((thread) => (
-            <article key={thread.id} className="thread-card">
-              <div className="thread-card__header">
-                <Link to={`/threads/${thread.id}`}>
+            <article key={thread.id} className="thread-feed-card">
+              <div className="thread-feed-card__status">
+                <span className={`thread-feed-card__bar ${thread.isPinned ? "is-pinned" : thread.isLocked ? "is-locked" : "is-open"}`} />
+              </div>
+
+              <div className="thread-feed-card__body">
+                <div className="thread-feed-card__meta">
+                  <span className="thread-feed-card__author">
+                    {thread.createdByUsername || userMap[thread.createdByUserId] || "Неизвестен потребител"}
+                  </span>
+                  <span className="thread-feed-card__dot" />
+                  <span className="muted">{toBgRole(thread.createdByRole || "Student")}</span>
+                  <span className="thread-feed-card__dot" />
+                  <span className="muted">{formatDateTime(thread.lastPostAt || thread.createdAt)}</span>
+                </div>
+
+                <Link to={`/threads/${thread.id}`} className="thread-feed-card__title">
                   <h3>{thread.title}</h3>
                 </Link>
-                <div className="thread-badges">
-                  {thread.isPinned && <span className="tag">Закачена</span>}
-                  {thread.isLocked && <span className="tag tag-danger">Заключена</span>}
+
+                <p className="thread-feed-card__summary">
+                  {thread.isLocked
+                    ? "Темата е заключена и е видима само за четене."
+                    : "Активна дискусия с подреден хронологичен поток и възможност за докладване."}
+                </p>
+
+                <div className="thread-feed-card__footer">
+                  <div className="thread-badges">
+                    {thread.isPinned && <span className="tag">Закачена</span>}
+                    {thread.isLocked && <span className="tag tag-danger">Заключена</span>}
+                    {!thread.isPinned && !thread.isLocked && <span className="tag tag-secondary">Активна</span>}
+                  </div>
+                  <span className="muted">Създадена: {formatDateTime(thread.createdAt)}</span>
                 </div>
               </div>
 
-              <p className="thread-card__author">
-                от {thread.createdByUsername || userMap[thread.createdByUserId] || "Неизвестен потребител"}
-              </p>
-
-              <div className="thread-meta">
-                <span className="muted">Създадена: {formatDateTime(thread.createdAt)}</span>
-                <span className="muted">Последна активност: {formatDateTime(thread.lastPostAt || thread.createdAt)}</span>
-              </div>
-
-              <div className="thread-actions">
+              <div className="thread-actions thread-actions--feed">
                 <Link to={`/threads/${thread.id}`} className="btn btn-secondary">Отвори</Link>
                 <Link
                   className="btn btn-danger"

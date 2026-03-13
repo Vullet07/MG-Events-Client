@@ -88,7 +88,7 @@ export default function LoginPage() {
       navigate("/dashboard");
     } catch (err) {
       const message =
-        err?.response?.data?.message ||
+        err?.apiMessage ||
         err?.message ||
         "Неуспешен вход. Провери данните си.";
       setError(message);
