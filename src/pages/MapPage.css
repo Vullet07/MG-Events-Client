@@ -495,6 +495,19 @@
   gap: 10px;
 }
 
+.map-date-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.map-date-field {
+  display: grid;
+  gap: 6px;
+  color: #7e2432;
+  font-size: 0.84rem;
+}
+
 .map-score-label {
   font-size: 0.84rem;
   color: #7e2432;
@@ -511,6 +524,9 @@
 .map-cluster-list {
   display: grid;
   gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .map-room-directory__list {
@@ -657,6 +673,10 @@
 }
 
 @media (max-width: 760px) {
+
+  .map-date-grid {
+    grid-template-columns: 1fr;
+  }
 
   .map-canvas-header {
     flex-direction: column;

@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { Minus, Plus, RotateCcw, X } from "lucide-react";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
@@ -15,10 +15,12 @@ const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
 export default function ThreadDetailsPage() {
   const { id } = useParams();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const toast = useToast();
 
   const replyFormRef = useRef(null);
+  const postRefs = useRef(new Map());
 
   const [thread, setThread] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -38,6 +40,7 @@ export default function ThreadDetailsPage() {
   const [imageZoom, setImageZoom] = useState(1);
 
   const [postSort, setPostSort] = useState("newest");
+  const [highlightPostId, setHighlightPostId] = useState(null);
   const [loadingThread, setLoadingThread] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -128,6 +131,23 @@ export default function ThreadDetailsPage() {
 
     return () => URL.revokeObjectURL(previewUrl);
   }, [newPhotoFile]);
+
+  useEffect(() => {
+    const targetPostId = Number(searchParams.get("postId"));
+    if (!Number.isInteger(targetPostId) || targetPostId <= 0 || posts.length === 0) return undefined;
+
+    const node = postRefs.current.get(targetPostId);
+    if (!node) return undefined;
+
+    setHighlightPostId(targetPostId);
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    const timeoutId = window.setTimeout(() => {
+      setHighlightPostId((current) => (current === targetPostId ? null : current));
+    }, 3600);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [posts, searchParams]);
 
   const sortedPosts = useMemo(() => {
     return [...posts].sort((a, b) => {
@@ -287,7 +307,17 @@ export default function ThreadDetailsPage() {
 
   const renderPosts = (items, depth = 0) =>
     items.map((post) => (
-      <article key={post.id} className={`post-card depth-${Math.min(depth, 3)}`}>
+      <article
+        key={post.id}
+        ref={(node) => {
+          if (node) {
+            postRefs.current.set(post.id, node);
+          } else {
+            postRefs.current.delete(post.id);
+          }
+        }}
+        className={`post-card depth-${Math.min(depth, 3)}${highlightPostId === post.id ? " post-card-highlight" : ""}`}
+      >
         <header className="post-meta">
           <div className="post-author">
             <img

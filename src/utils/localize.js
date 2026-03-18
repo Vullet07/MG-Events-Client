@@ -7,6 +7,7 @@ const roleMap = {
 };
 
 const reportStatusMap = {
+  Open: "Чака обработка",
   Pending: "Чака обработка",
   Reviewed: "Прегледан",
   Actioned: "Предприето действие",

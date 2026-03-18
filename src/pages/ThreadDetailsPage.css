@@ -50,6 +50,12 @@
   gap: 9px;
 }
 
+.post-card-highlight {
+  border-color: #d7596f;
+  box-shadow: 0 0 0 3px rgba(215, 89, 111, 0.14), 0 14px 28px rgba(120, 0, 0, 0.09);
+  background: linear-gradient(180deg, #fff7f8 0%, #fff 100%);
+}
+
 .post-meta {
   display: flex;
   justify-content: space-between;

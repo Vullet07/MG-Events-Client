@@ -4,10 +4,12 @@ import { register } from "../api/authApi";
 import "./RegisterPage.css";
 
 export default function RegisterPage() {
+  const gradeOptions = Array.from({ length: 12 }, (_, index) => index + 1);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [gradeLevel, setGradeLevel] = useState("8");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,7 +21,7 @@ export default function RegisterPage() {
     setError("");
     setSuccess("");
 
-    if (!username.trim() || !email.trim() || !password || !confirmPassword) {
+    if (!username.trim() || !email.trim() || !password || !confirmPassword || !gradeLevel) {
       setError("Всички полета са задължителни.");
       return;
     }
@@ -34,7 +36,8 @@ export default function RegisterPage() {
       await register({
         username: username.trim(),
         email: email.trim(),
-        password
+        password,
+        gradeLevel: Number(gradeLevel)
       });
       setSuccess("Регистрацията е успешна. Пренасочване към вход...");
       setTimeout(() => navigate("/login"), 1600);
@@ -82,6 +85,14 @@ export default function RegisterPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
+
+        <select className="input" value={gradeLevel} onChange={(e) => setGradeLevel(e.target.value)}>
+          {gradeOptions.map((grade) => (
+            <option key={grade} value={grade}>
+              {grade} клас
+            </option>
+          ))}
+        </select>
 
         <input
           type="password"

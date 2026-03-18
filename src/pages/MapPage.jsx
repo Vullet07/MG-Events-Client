@@ -754,6 +754,7 @@ export default function MapPage() {
   const [searchParams] = useSearchParams();
   const toast = useToast();
   const svgRef = useRef(null);
+  const handledPreviewPinRef = useRef(null);
   const dragStateRef = useRef({
     active: false,
     moved: false,
@@ -783,6 +784,8 @@ export default function MapPage() {
   const [roomSearch, setRoomSearch] = useState("");
   const [roomFilter, setRoomFilter] = useState("all");
   const [zoneFilter, setZoneFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [minScore, setMinScore] = useState(-20);
   const [onlyWithPhoto, setOnlyWithPhoto] = useState(false);
 
@@ -874,6 +877,24 @@ export default function MapPage() {
       })
       .filter(Boolean);
   }, [pins]);
+  useEffect(() => {
+    const pinId = Number(searchParams.get("pinId"));
+    if (!Number.isInteger(pinId) || pinId <= 0 || normalizedPins.length === 0) return;
+    if (handledPreviewPinRef.current === pinId) return;
+
+    const targetPin = normalizedPins.find((pin) => Number(pin.id) === pinId);
+    if (!targetPin) return;
+
+    handledPreviewPinRef.current = pinId;
+    const parsedLayer = parseLayerId(targetPin.layerId);
+    setView(parsedLayer.view);
+    setFloor(parsedLayer.floor);
+    setActiveCluster(null);
+    setActivePinId(targetPin.id);
+    focusOnPoint(targetPin.x, targetPin.y, getFocusZoomForView(parsedLayer.view, "pin"));
+    setFeedback(`Отворен е маркерът "${targetPin.title}". За преглед на друг маркер използвай десен бутон.`);
+  }, [normalizedPins, searchParams]);
+
 
   const layerPins = useMemo(() => normalizedPins.filter((pin) => pin.layerId === layerId), [normalizedPins, layerId]);
   const roomPinCounts = useMemo(() => {
@@ -893,11 +914,19 @@ export default function MapPage() {
       if (onlyWithPhoto && !pin.photoUrl) return false;
       if (roomFilter !== "all" && pin.roomId !== roomFilter) return false;
       if (zoneFilter !== "all" && pin.roomKind !== zoneFilter) return false;
+      if (dateFrom) {
+        const fromBoundary = new Date(`${dateFrom}T00:00:00`);
+        if (new Date(pin.createdAt) < fromBoundary) return false;
+      }
+      if (dateTo) {
+        const toBoundary = new Date(`${dateTo}T23:59:59.999`);
+        if (new Date(pin.createdAt) > toBoundary) return false;
+      }
       if (!query) return true;
       const haystack = `${pin.title || ""} ${pin.description || ""} ${pin.createdByUsername || ""} ${pin.roomLabel || ""} ${pin.roomId || ""}`.toLowerCase();
       return haystack.includes(query);
     });
-  }, [deferredSearch, layerPins, minScore, onlyWithPhoto, roomFilter, zoneFilter]);
+  }, [dateFrom, dateTo, deferredSearch, layerPins, minScore, onlyWithPhoto, roomFilter, zoneFilter]);
 
   const displayRooms = useMemo(() => rooms.map((item) => projectRect(item, currentProjection)), [rooms, currentProjection]);
   const roomAnchors = useMemo(() => {
@@ -1036,10 +1065,79 @@ export default function MapPage() {
     setRoomSearch("");
     setRoomFilter("all");
     setZoneFilter("all");
+    setDateFrom("");
+    setDateTo("");
     setMinScore(-20);
     setOnlyWithPhoto(false);
     setActiveCluster(null);
     setFeedback("Филтрите са изчистени.");
+  };
+
+  const sortPinsForPreview = (items) =>
+    [...items].sort((a, b) => {
+      if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+  const openPinPreview = (pin, { focus = true } = {}) => {
+    if (!pin) return;
+    setActivePinId(pin.id);
+    setActiveCluster(null);
+    if (focus) {
+      focusOnPoint(pin.x, pin.y, getFocusZoomForView(view, "pin"));
+    }
+  };
+
+  const openClusterPreview = (cluster, { focus = true } = {}) => {
+    if (!cluster) return;
+    setActiveCluster({
+      id: cluster.id,
+      roomId: cluster.roomId || null,
+      roomLabel: cluster.roomLabel || "Струпване",
+      count: cluster.count,
+      pins: sortPinsForPreview(cluster.pins)
+    });
+    setActivePinId(null);
+    if (focus) {
+      focusOnPoint(
+        cluster.x,
+        cluster.y,
+        cluster.type === "room-cluster"
+          ? Math.max(zoom, getFocusZoomForView(view, "room"))
+          : clamp(zoom + 0.2, getDefaultZoomForView(view), MAX_ZOOM)
+      );
+    }
+  };
+
+  const handleMapContextMenu = (event) => {
+    event.preventDefault();
+    if (!svgRef.current) return;
+
+    const point = toSvgPoint(event, svgRef.current);
+    const worldPoint = unprojectPoint(point.x, point.y, currentProjection);
+    const target = getInteractiveTargetAtPoint(layerId, worldPoint.x, worldPoint.y, rooms);
+    const roomPins = target?.room ? sortPinsForPreview(filteredPins.filter((pin) => pin.roomId === target.room.id)) : [];
+
+    if (roomPins.length === 1) {
+      openPinPreview(roomPins[0]);
+      return;
+    }
+
+    if (roomPins.length > 1) {
+      openClusterPreview({
+        id: `preview-${layerId}-${target.room.id}`,
+        roomId: target.room.id,
+        roomLabel: target.room.label,
+        count: roomPins.length,
+        pins: roomPins,
+        x: point.x,
+        y: point.y,
+        type: roomPins.length >= ROOM_CLUSTER_THRESHOLD ? "room-cluster" : "cluster"
+      });
+      return;
+    }
+
+    setFeedback("Няма маркери за преглед в избраната зона.");
   };
 
   const handleMapClick = (event) => {
@@ -1577,6 +1675,26 @@ export default function MapPage() {
                 </option>
               ))}
             </select>
+            <div className="map-date-grid">
+              <label className="map-date-field">
+                <span>{"\u041E\u0442 \u0434\u0430\u0442\u0430"}</span>
+                <input
+                  className="input"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(event) => setDateFrom(event.target.value)}
+                />
+              </label>
+              <label className="map-date-field">
+                <span>{"\u0414\u043E \u0434\u0430\u0442\u0430"}</span>
+                <input
+                  className="input"
+                  type="date"
+                  value={dateTo}
+                  onChange={(event) => setDateTo(event.target.value)}
+                />
+              </label>
+            </div>
             <label className="map-score-label" htmlFor="min-score">
               Минимална оценка: <strong>{minScore}</strong>
             </label>
@@ -1690,25 +1808,22 @@ export default function MapPage() {
                 )}
               </div>
               <div className="map-cluster-list">
-                {activeCluster.pins.slice(0, 24).map((pin) => (
+                {activeCluster.pins.map((pin) => (
                   <button
                     key={pin.id}
                     type="button"
                     className="map-cluster-item"
                     onClick={() => {
-                      setActivePinId(pin.id);
-                      setActiveCluster(null);
-                      focusOnPoint(pin.x, pin.y, clamp(zoom + 0.2, getDefaultZoomForView(view), MAX_ZOOM));
+                      openPinPreview(pin, { focus: true });
                     }}
                   >
                     <strong>{pin.title}</strong>
-                    <span>{pin.roomLabel || "Без стая"}</span>
+                    <span>
+                      {pin.roomLabel || "\u0411\u0435\u0437 \u0441\u0442\u0430\u044F"} - {pin.createdByUsername || "\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u0435\u043D"} - {formatDateTime(pin.createdAt)}
+                    </span>
                   </button>
                 ))}
               </div>
-              {activeCluster.count > 24 && (
-                <p className="muted">Показани са първите 24 пина. За пълния преглед използвай филтъра за зоната или списъка с пинове.</p>
-              )}
             </div>
           )}
 
@@ -1790,6 +1905,7 @@ export default function MapPage() {
             className="map-svg"
             viewBox={viewBox}
             onClick={handleMapClick}
+            onContextMenu={handleMapContextMenu}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -1848,24 +1964,12 @@ export default function MapPage() {
                       transform={`translate(${item.x} ${item.y})`}
                       onClick={(event) => {
                         event.stopPropagation();
-                        setActiveCluster({
-                          id: item.id,
-                          roomId: item.roomId || null,
-                          roomLabel: item.roomLabel || "Струпване",
-                          count: item.count,
-                          pins: [...item.pins].sort((a, b) => {
-                            if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
-                            return new Date(b.createdAt) - new Date(a.createdAt);
-                          })
-                        });
-                        setActivePinId(null);
-                        focusOnPoint(
-                          item.x,
-                          item.y,
-                          item.type === "room-cluster"
-                            ? Math.max(zoom, getFocusZoomForView(view, "room"))
-                            : clamp(zoom + 0.2, getDefaultZoomForView(view), MAX_ZOOM)
-                        );
+                        setFeedback("\u0417\u0430 \u043F\u0440\u0435\u0433\u043B\u0435\u0434 \u043D\u0430 \u043A\u043B\u044A\u0441\u0442\u0435\u0440\u0430 \u0438\u0437\u043F\u043E\u043B\u0437\u0432\u0430\u0439 \u0434\u0435\u0441\u0435\u043D \u0431\u0443\u0442\u043E\u043D.");
+                      }}
+                      onContextMenu={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        openClusterPreview(item);
                       }}
                     >
                       <circle className="pin-cluster-hit" r={radius + 7} />
@@ -1884,9 +1988,12 @@ export default function MapPage() {
                     transform={`translate(${item.x} ${item.y})`}
                     onClick={(event) => {
                       event.stopPropagation();
-                      setActivePinId(item.pin.id);
-                      setActiveCluster(null);
-                      focusOnPoint(item.x, item.y);
+                      setFeedback("\u0417\u0430 \u043F\u0440\u0435\u0433\u043B\u0435\u0434 \u043D\u0430 \u043C\u0430\u0440\u043A\u0435\u0440\u0430 \u0438\u0437\u043F\u043E\u043B\u0437\u0432\u0430\u0439 \u0434\u0435\u0441\u0435\u043D \u0431\u0443\u0442\u043E\u043D.");
+                    }}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openPinPreview({ ...item.pin, x: item.x, y: item.y });
                     }}
                     >
                     <circle className="pin-hit" r={item.stackSize > 1 ? 18 : 16} />
