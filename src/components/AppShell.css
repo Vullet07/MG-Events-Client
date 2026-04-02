@@ -101,8 +101,13 @@
   border: 1px solid rgba(255, 255, 255, 0.25);
   padding: 12px;
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 10px;
+  gap: 12px;
+}
+
+.side-user__identity {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
   align-items: center;
 }
 
@@ -117,16 +122,29 @@
   font-weight: 700;
 }
 
+.side-user__copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  align-content: center;
+}
+
 .side-user__name {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .side-user__role {
   margin: 1px 0 0;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.76);
+}
+
+.side-user__logout {
+  width: 100%;
+  justify-content: center;
 }
 
 .app-main {

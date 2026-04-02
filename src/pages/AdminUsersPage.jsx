@@ -18,6 +18,8 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
   const [teacherRequests, setTeacherRequests] = useState([]);
+  const [pinReportMonth, setPinReportMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [pinReport, setPinReport] = useState(null);
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -32,6 +34,7 @@ export default function AdminUsersPage() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [loadingReports, setLoadingReports] = useState(false);
   const [loadingTeacherRequests, setLoadingTeacherRequests] = useState(false);
+  const [loadingPinReport, setLoadingPinReport] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [deletingUserId, setDeletingUserId] = useState(null);
 
@@ -86,12 +89,37 @@ export default function AdminUsersPage() {
     }
   };
 
+  const fetchPinReport = async (monthValue = pinReportMonth) => {
+    if (!isAdmin) {
+      setPinReport(null);
+      return;
+    }
+
+    try {
+      setLoadingPinReport(true);
+      const res = await api.get("/event-pins/reports/monthly", {
+        params: { month: monthValue }
+      });
+      setPinReport(res.data);
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || "Неуспешно зареждане на месечната статистика за пиновете.");
+    } finally {
+      setLoadingPinReport(false);
+    }
+  };
+
   useEffect(() => {
     if (!currentUser?.role) return;
     fetchUsers();
     fetchReports();
     fetchTeacherRequests();
+    fetchPinReport();
   }, [currentUser?.role]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchPinReport(pinReportMonth);
+  }, [isAdmin, pinReportMonth]);
 
   const visibleUsers = useMemo(() => {
     const normalizedQuery = search.trim().toLowerCase();
@@ -297,6 +325,30 @@ export default function AdminUsersPage() {
     setSortBy("username");
   };
 
+  const handleDownloadPinReport = async () => {
+    try {
+      const response = await api.get("/event-pins/reports/monthly/export", {
+        params: { month: pinReportMonth },
+        responseType: "blob"
+      });
+
+      const blob = new Blob([response.data], { type: "application/msword" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `mg-akademik-kiril-popov-pins-${pinReportMonth}.doc`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast?.success("Word отчетът е изтеглен.");
+    } catch (err) {
+      const nextError = err?.response?.data?.message || err?.message || "Неуспешно изтегляне на Word отчета.";
+      setError(nextError);
+      toast?.error(nextError);
+    }
+  };
+
   return (
     <div className="page-shell admin-page">
       <section className="card card-pad admin-header">
@@ -308,9 +360,20 @@ export default function AdminUsersPage() {
               : "Режим администратор: потребители, сигнали и учителски заявки в един прегледен поток."}
           </p>
         </div>
-        <Link to="/threads" className="btn btn-ghost btn-sm">
-          Назад към темите
-        </Link>
+        <div className="admin-header__actions">
+          {isAdmin && (
+            <button
+              type="button"
+              className={`btn btn-sm ${activeSection === "stats" ? "btn-primary" : "btn-secondary"}`}
+              onClick={() => setActiveSection("stats")}
+            >
+              Отвори статистиката
+            </button>
+          )}
+          <Link to="/threads" className="btn btn-ghost btn-sm">
+            Назад към темите
+          </Link>
+        </div>
       </section>
 
       <section className="card card-pad admin-toolbar">
@@ -376,6 +439,13 @@ export default function AdminUsersPage() {
                 >
                   Сигнали
                 </button>
+                <button
+                  type="button"
+                  className={`btn btn-ghost btn-sm ${activeSection === "stats" ? "is-active" : ""}`}
+                  onClick={() => setActiveSection("stats")}
+                >
+                  Статистика
+                </button>
               </>
             )}
           </div>
@@ -388,6 +458,20 @@ export default function AdminUsersPage() {
 
       {feedback && <p className="success-msg">{feedback}</p>}
       {error && <p className="error-msg">{error}</p>}
+
+      {isAdmin && activeSection !== "stats" && (
+        <section className="card card-pad admin-stats-cta">
+          <div>
+            <strong>Месечна статистика за пиновете</strong>
+            <p className="muted">
+              Прегледай най-проблемните зони в МГ "Академик Кирил Попов" и изтегли готов Word отчет за ръководството.
+            </p>
+          </div>
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => setActiveSection("stats")}>
+            Към статистиката
+          </button>
+        </section>
+      )}
 
       {activeSection === "users" && (
         <section className="admin-feed">
@@ -463,7 +547,7 @@ export default function AdminUsersPage() {
                     <div className="admin-feed-card__meta">
                       <span>Теми: {entry.threadsCount || 0}</span>
                       <span>Публикации: {entry.postsCount || 0}</span>
-                      <span>Маркери: {entry.pinsCount || 0}</span>
+                      <span>Пинове: {entry.pinsCount || 0}</span>
                       {entry.scheduledDeletionAt ? (
                         <span>Автоматично изтриване: {formatDateTime(entry.scheduledDeletionAt)}</span>
                       ) : null}
@@ -624,6 +708,108 @@ export default function AdminUsersPage() {
         </section>
       )}
 
+      {isAdmin && activeSection === "stats" && (
+        <section className="admin-list">
+          <section className="card card-pad admin-list-head admin-report-toolbar">
+            <div>
+              <h3>Месечна статистика за пиновете</h3>
+              <p className="muted">Най-актуалните пинове с висок рейтинг за МГ "Академик Кирил Попов" - Пловдив.</p>
+            </div>
+            <div className="admin-list-actions">
+              <input
+                className="input"
+                type="month"
+                value={pinReportMonth}
+                onChange={(event) => setPinReportMonth(event.target.value)}
+              />
+              <button className="btn btn-secondary btn-sm" type="button" onClick={() => fetchPinReport(pinReportMonth)}>
+                Обнови
+              </button>
+              <button className="btn btn-primary btn-sm" type="button" onClick={handleDownloadPinReport}>
+                Изтегли Word
+              </button>
+            </div>
+          </section>
+
+          {loadingPinReport ? (
+            <article className="card card-pad admin-list-item admin-list-item--stacked">
+              <p className="muted">Зареждаме месечната статистика...</p>
+            </article>
+          ) : !pinReport ? (
+            <article className="card card-pad admin-list-item admin-list-item--stacked">
+              <p className="muted">Няма налична статистика за избрания период.</p>
+            </article>
+          ) : (
+            <>
+              <div className="admin-feed__summary admin-report-summary card card-pad">
+                <div>
+                  <strong>{pinReport.totalPins || 0}</strong>
+                  <span>Общо пинове</span>
+                </div>
+                <div>
+                  <strong>{pinReport.pinsWithPhotos || 0}</strong>
+                  <span>Пинове със снимка</span>
+                </div>
+                <div>
+                  <strong>{pinReport.activeZones || 0}</strong>
+                  <span>Активни зони</span>
+                </div>
+              </div>
+
+              <article className="card card-pad admin-list-item admin-list-item--stacked">
+                <div className="admin-list-item__title-row">
+                  <strong>Най-проблемни места</strong>
+                  <span className="pill">{pinReport.monthLabel}</span>
+                </div>
+                <div className="admin-report-grid">
+                  {(pinReport.hotspots || []).map((hotspot) => (
+                    <div key={`${hotspot.layerLabel}-${hotspot.zoneLabel}`} className="admin-report-box">
+                      <strong>{hotspot.zoneLabel}</strong>
+                      <span>{hotspot.layerLabel}</span>
+                      <span>Категория: {hotspot.dominantCategory}</span>
+                      <span>Пинове: {hotspot.pinsCount}</span>
+                      <span>Общ рейтинг: {hotspot.totalScore}</span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+
+              <article className="card card-pad admin-list-item admin-list-item--stacked">
+                <div className="admin-list-item__title-row">
+                  <strong>Категории</strong>
+                </div>
+                <div className="admin-report-grid">
+                  {(pinReport.categories || []).map((category) => (
+                    <div key={category.category} className="admin-report-box">
+                      <strong>{category.category}</strong>
+                      <span>Пинове: {category.pinsCount}</span>
+                      <span>Общ рейтинг: {category.totalScore}</span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+
+              <article className="card card-pad admin-list-item admin-list-item--stacked">
+                <div className="admin-list-item__title-row">
+                  <strong>Най-актуални пинове</strong>
+                </div>
+                <div className="admin-report-grid">
+                  {(pinReport.topPins || []).map((pin) => (
+                    <div key={pin.id} className="admin-report-box">
+                      <strong>{pin.title}</strong>
+                      <span>{pin.category}</span>
+                      <span>{pin.layerLabel} · {pin.zoneLabel}</span>
+                      <span>Автор: {pin.createdByUsername}</span>
+                      <span>Рейтинг: {pin.score}</span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            </>
+          )}
+        </section>
+      )}
+
       {deleteCandidate &&
         createPortal(
         <div className="admin-delete-overlay" onClick={() => (deletingUserId ? null : setDeleteCandidate(null))}>
@@ -632,7 +818,7 @@ export default function AdminUsersPage() {
             <h3>Изтрий профила на {deleteCandidate.username}?</h3>
             <p>
               Това действие ще премахне потребителя и свързаните с него теми, публикации,
-              маркери, сигнали, гласове и качени файлове.
+              пинове, сигнали, гласове и качени файлове.
             </p>
             <div className="admin-delete-modal__meta">
               <span className="pill">{toBgRole(deleteCandidate.role)}</span>

@@ -19,7 +19,7 @@ import { Skeleton, SkeletonLines } from "../components/ui/Skeleton";
 import "./HomePage.css";
 
 const platformHighlights = [
-  "Отбелязвай локални проблеми с местоположение и снимки.",
+  "Отбелязвай локални проблеми в МГ \"Академик Кирил Попов\" с местоположение и снимки.",
   "Прехвърляй важните сигнали в отделни форумни теми.",
   "Използвай сигнали и модерация за по-качествена общност."
 ];
@@ -41,7 +41,7 @@ const quickActions = [
   },
   {
     to: "/map?create=1",
-    label: "Добави маркер",
+    label: "Добави пин",
     bucket: "map",
     icon: Route,
     variant: "btn-ghost"
@@ -210,7 +210,7 @@ export default function HomePage() {
           </article>
           <article>
             <strong>{stats.pins}</strong>
-            <span>Маркери</span>
+            <span>Пинове</span>
           </article>
           <article>
             <strong>{stats.news}</strong>
@@ -270,7 +270,7 @@ export default function HomePage() {
             </article>
             <article>
               <strong>{stats.pins}</strong>
-              <span>Маркери</span>
+              <span>Пинове</span>
             </article>
             <article>
               <strong>{stats.news}</strong>
@@ -321,7 +321,7 @@ export default function HomePage() {
       <section className="dashboard-grid dashboard-grid--bottom">
         <article className="card card-pad dashboard-panel">
           <div className="split-row">
-            <h3>Популярни маркери</h3>
+            <h3>Популярни пинове</h3>
             <Link className="link" to="/map">
               Отвори карта
             </Link>
@@ -333,7 +333,7 @@ export default function HomePage() {
                 <SkeletonLines lines={3} />
               </div>
             ) : topPins.length === 0 ? (
-              <p className="muted">Все още няма маркери.</p>
+              <p className="muted">Все още няма пинове.</p>
             ) : (
               topPins.map((pin) => (
                 <div key={pin.id} className="dashboard-feed-item">
@@ -400,7 +400,7 @@ export default function HomePage() {
               <X size={16} />
             </button>
             <h3>Кратко въведение</h3>
-            <p className="muted">Платформата вече има карта, форум, сигнали, профили и модерация в един поток.</p>
+            <p className="muted">Платформата обединява карта, форум, сигнали, профили и модерация за МГ "Академик Кирил Попов".</p>
             <ul>
               <li>1. Избери „Карта“, ако искаш да отбележиш събитие.</li>
               <li>2. Избери „Теми“, ако искаш дискусия и отговори.</li>

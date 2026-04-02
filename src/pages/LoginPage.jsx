@@ -15,7 +15,7 @@ const authHighlights = [
 
 const panelStats = [
   { label: "Форум", value: "Вложени отговори" },
-  { label: "Карта", value: "Гео маркери" },
+  { label: "Карта", value: "Пинове и сигнали" },
   { label: "Модерация", value: "Учител/Админ" }
 ];
 
@@ -101,11 +101,11 @@ export default function LoginPage() {
   return (
     <div className="auth-layout login-layout">
       <aside className="auth-panel login-panel">
-        <p className="pill">Платформа MG Events</p>
+        <p className="pill">МГ "Академик Кирил Попов" - Пловдив</p>
         <h1>Координирай сигнали и решения на едно място.</h1>
         <p>
-          Влез, за да участваш във форума, да поставяш маркери и да следиш
-          важни училищни съобщения.
+          Влез, за да участваш във форума, да поставяш пинове и да следиш
+          важни училищни съобщения за МГ "Академик Кирил Попов".
         </p>
         <div className="login-panel__stats">
           {panelStats.map((item) => (
@@ -167,7 +167,7 @@ export default function LoginPage() {
         <section className="login-snapshot">
           <div className="login-snapshot__head">
             <strong>Актуална картина на общността</strong>
-            <span className="pill">{snapshot.threadCount} теми - {snapshot.pinCount} маркера</span>
+            <span className="pill">{snapshot.threadCount} теми - {snapshot.pinCount} пина</span>
           </div>
 
           {snapshot.recentThreads.length === 0 ? (

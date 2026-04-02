@@ -11,6 +11,13 @@
   flex-wrap: wrap;
 }
 
+.admin-header__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .admin-toolbar {
   display: grid;
   gap: 12px;
@@ -34,6 +41,9 @@
   display: inline-flex;
   gap: 6px;
   flex-wrap: wrap;
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 2px;
 }
 
 .admin-tabs .is-active {
@@ -45,6 +55,18 @@
 .admin-list {
   display: grid;
   gap: 10px;
+}
+
+.admin-stats-cta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-stats-cta p {
+  margin: 4px 0 0;
 }
 
 .admin-feed__summary {
@@ -266,6 +288,38 @@
   flex-wrap: wrap;
 }
 
+.admin-report-toolbar p {
+  margin: 4px 0 0;
+}
+
+.admin-report-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-report-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-report-box {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 249, 250, 0.94), rgba(255, 255, 255, 1));
+}
+
+.admin-report-box strong {
+  color: #681824;
+}
+
+.admin-report-box span {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 .admin-report-card {
   background:
     linear-gradient(180deg, rgba(255, 250, 251, 0.94), rgba(255, 255, 255, 1)),
@@ -360,6 +414,11 @@
     grid-template-columns: 1fr;
   }
 
+  .admin-report-grid,
+  .admin-report-summary {
+    grid-template-columns: 1fr;
+  }
+
   .admin-toolbar__filters {
     grid-template-columns: 1fr 1fr;
   }
@@ -390,6 +449,8 @@
   }
 
   .admin-toolbar__side,
+  .admin-header__actions,
+  .admin-stats-cta,
   .admin-list-actions,
   .admin-delete-modal__actions {
     align-items: stretch;

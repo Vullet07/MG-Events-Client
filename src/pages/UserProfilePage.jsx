@@ -58,7 +58,7 @@ export default function UserProfilePage() {
   const tabTitle = useMemo(() => {
     if (activeTab === "threads") return "Теми";
     if (activeTab === "posts") return "Публикации";
-    return "Маркери";
+    return "Пинове";
   }, [activeTab]);
 
   const changePage = (nextPage) => {
@@ -87,7 +87,7 @@ export default function UserProfilePage() {
 
     if (activeTab === "posts") {
       return tab.items.map((item) => (
-        <Link key={item.postId} to={`/threads/${item.threadId}`} className="profile-item">
+        <Link key={item.postId} to={`/threads/${item.threadId}?postId=${item.postId}`} className="profile-item">
           <strong>{item.title || item.threadTitle || "Публикация"}</strong>
           <p>{item.content}</p>
           <span className="muted">{formatDateTime(item.createdAt)}</span>
@@ -96,11 +96,16 @@ export default function UserProfilePage() {
     }
 
     return tab.items.map((item) => (
-      <div key={item.pinId} className="profile-item">
+      <Link key={item.pinId} to={`/map?pinId=${item.pinId}`} className="profile-item">
         <strong>{item.title}</strong>
         {item.description && <p>{item.description}</p>}
+        <span className="muted">
+          {item.category || "Без категория"}
+          {item.layerLabel ? ` · ${item.layerLabel}` : ""}
+          {item.zoneLabel ? ` · ${item.zoneLabel}` : ""}
+        </span>
         <span className="muted">{formatDateTime(item.createdAt)}</span>
-      </div>
+      </Link>
     ));
   };
 
@@ -119,7 +124,7 @@ export default function UserProfilePage() {
               <p className="muted">{profile.email}</p>
               <span className="tag tag-secondary">{toBgRole(profile.role)}</span>
               <p className="muted">
-                Теми {profile.threadsCount || 0} - Публикации {profile.postsCount || 0} - Маркери {profile.pinsCount || 0}
+                Теми {profile.threadsCount || 0} - Публикации {profile.postsCount || 0} - Пинове {profile.pinsCount || 0}
               </p>
               <Link
                 to={`/report?type=User&id=${id}&label=${encodeURIComponent(
@@ -157,7 +162,7 @@ export default function UserProfilePage() {
               className={`btn btn-ghost btn-sm ${activeTab === "pins" ? "tab-active" : ""}`}
               onClick={() => setActiveTab("pins")}
             >
-              Маркери
+              Пинове
             </button>
           </div>
         </div>

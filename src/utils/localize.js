@@ -21,7 +21,7 @@ const reportStatusMap = {
 const targetTypeMap = {
   Post: "Публикация",
   Thread: "Тема",
-  Pin: "Маркер",
+  Pin: "Пин",
   User: "Потребител"
 };
 

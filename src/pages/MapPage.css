@@ -34,6 +34,7 @@
 }
 
 .map-canvas-indoor {
+  position: relative;
   overflow: hidden;
   border-radius: 24px;
   border: 1px solid var(--line);
@@ -475,7 +476,6 @@
 .map-cluster-card,
 .map-filters,
 .map-active-pin,
-.map-room-directory,
 .map-pin-explorer,
 
 .map-created-flow h3,
@@ -529,14 +529,6 @@
   padding-right: 2px;
 }
 
-.map-room-directory__list {
-  display: grid;
-  gap: 8px;
-  max-height: 260px;
-  overflow: auto;
-  padding-right: 2px;
-}
-
 .map-pin-explorer__list {
   display: grid;
   gap: 8px;
@@ -577,45 +569,16 @@
   flex-wrap: wrap;
 }
 
-.map-room-entry {
-  border: 1px solid var(--line);
-  background: #fff;
-  border-radius: 12px;
-  padding: 10px 12px;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  cursor: pointer;
-}
-
-.map-room-entry strong {
-  display: block;
-  color: #55111d;
-}
-
-.map-room-entry span {
-  display: block;
-  font-size: 0.8rem;
-}
-
-.map-room-entry:hover,
-.map-room-entry.is-active {
-  border-color: #da7284;
-  background: #fff1f4;
-}
-
 .map-cluster-item,
 .map-top-pin {
   border: 1px solid var(--line);
   background: #fff;
   border-radius: 12px;
-  padding: 9px 10px;
+  padding: 8px 9px;
   text-align: left;
   cursor: pointer;
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 .map-cluster-item:hover,
@@ -654,6 +617,67 @@
   flex-wrap: wrap;
 }
 
+.map-floating-panel {
+  position: absolute;
+  top: 110px;
+  right: 16px;
+  width: min(340px, calc(100% - 32px));
+  z-index: 6;
+  pointer-events: none;
+}
+
+.map-floating-panel__card {
+  pointer-events: auto;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(193, 18, 31, 0.14);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 24px 60px rgba(85, 17, 29, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.map-floating-panel__card--compact h3 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.map-floating-panel__card--compact .muted {
+  font-size: 0.81rem;
+}
+
+.map-floating-panel__tags,
+.map-floating-panel__actions,
+.map-floating-panel__form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.map-floating-panel__form {
+  display: grid;
+}
+
+.map-floating-panel__scroll {
+  display: grid;
+  gap: 8px;
+  max-height: min(56vh, 440px);
+  overflow-y: auto;
+  padding: 2px 4px 2px 0;
+  border-top: 1px solid rgba(193, 18, 31, 0.08);
+  border-bottom: 1px solid rgba(193, 18, 31, 0.08);
+}
+
+.map-floating-panel__image {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+}
+
 @media (max-width: 1080px) {
   .map-layout-indoor {
     grid-template-columns: 1fr;
@@ -669,6 +693,18 @@
 
   .map-canvas-indoor {
     min-height: 640px;
+  }
+
+  .map-floating-panel {
+    top: auto;
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    width: auto;
+  }
+
+  .map-floating-panel__card {
+    max-height: min(54vh, 420px);
   }
 }
 

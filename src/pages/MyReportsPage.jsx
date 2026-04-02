@@ -90,7 +90,7 @@ export default function MyReportsPage() {
         ) : reports.length === 0 ? (
           <EmptyState
             title="Все още нямаш подадени сигнали"
-            description="Когато докладваш публикация, тема, маркер или профил, ще ги виждаш тук."
+            description="Когато докладваш публикация, тема, пин или профил, ще ги виждаш тук."
             actionLabel="Към форума"
             actionTo="/threads"
           />

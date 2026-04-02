@@ -44,11 +44,11 @@ export default function LandingPage() {
     <div className="landing-page">
       <section className="landing-hero card">
         <div className="landing-hero__copy">
-          <p className="landing-eyebrow">Съвместна платформа MG Events</p>
+          <p className="landing-eyebrow">Платформа за МГ "Академик Кирил Попов" - Пловдив</p>
           <h1>Сигнализирай, обсъждай и координирай решения по-бързо.</h1>
           <p>
-            MG Events съчетава форумни теми, маркери на карта, модерация и
-            официални училищни съобщения в една работеща среда.
+            MG Events съчетава форумни теми, пинове на карта, модерация и
+            официални училищни съобщения за МГ "Академик Кирил Попов" в една работеща среда.
           </p>
           <div className="landing-actions">
             <Link to="/login" className="btn btn-primary">Вход</Link>
@@ -64,7 +64,7 @@ export default function LandingPage() {
           </article>
           <article className="landing-stat">
             <strong>{stats.pins}</strong>
-            <span>Маркери на карта</span>
+            <span>Пинове на карта</span>
           </article>
           <article className="landing-stat">
             <strong>{stats.news}</strong>
@@ -105,7 +105,7 @@ export default function LandingPage() {
           <div className="landing-steps">
             <div>
               <span className="landing-step-index">1</span>
-              <p><strong>Маркирай събитие</strong> с локация и снимка.</p>
+              <p><strong>Добави пин</strong> с локация и снимка.</p>
             </div>
             <div>
               <span className="landing-step-index">2</span>
@@ -125,12 +125,12 @@ export default function LandingPage() {
 
       <section className="landing-bottom card card-pad">
         <div>
-          <h2 className="section-title">Последни маркери</h2>
-          <p className="section-subtitle">Бърз преглед на последно докладвани събития.</p>
+          <h2 className="section-title">Последни пинове</h2>
+          <p className="section-subtitle">Бърз преглед на последно докладвани събития в училището.</p>
         </div>
         <div className="landing-pin-grid">
           {recentPins.length === 0 ? (
-            <p className="muted">Все още няма налични маркери.</p>
+            <p className="muted">Все още няма налични пинове.</p>
           ) : (
             recentPins.map((pin) => (
               <article key={pin.id} className="landing-pin-card">

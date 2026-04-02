@@ -23,7 +23,9 @@ export default function NewsPage() {
     try {
       const threadsRes = await api.get("/forum-threads?page=1&pageSize=300");
       const threads = threadsRes.data?.items || threadsRes.data || [];
-      const onlyNews = threads.filter((thread) => thread.title?.toLowerCase().startsWith("[news]"));
+      const onlyNews = threads.filter((thread) =>
+        /^\[(news|новина)\]/i.test(thread.title || "")
+      );
 
       const withPreview = await Promise.all(
         onlyNews.map(async (thread) => {
@@ -112,7 +114,7 @@ export default function NewsPage() {
       <section className="card card-pad news-head">
         <div>
           <h2 className="section-title">Новини и съобщения</h2>
-          <p className="section-subtitle">Официални обновления от учители и администратори.</p>
+          <p className="section-subtitle">Официални обновления от учители и администратори на МГ "Академик Кирил Попов" - Пловдив.</p>
         </div>
         <input
           className="input news-search"

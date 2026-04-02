@@ -39,7 +39,7 @@ const allNavItems = [
   {
     to: "/map",
     label: "Карта",
-    description: "Маркери и сигнали",
+    description: "Пинове и сигнали",
     icon: MapPinned
   },
   {
@@ -95,7 +95,7 @@ function getPageMeta(pathname) {
     },
     "/map": {
       title: "Карта на събитията",
-      subtitle: "Поставяй маркери и следи локални проблеми."
+      subtitle: "Поставяй пинове и следи локални проблеми в МГ \"Академик Кирил Попов\"."
     },
     "/news": {
       title: "Новини",
@@ -118,7 +118,7 @@ function getPageMeta(pathname) {
   return (
     byPath[pathname] || {
       title: "MG Events",
-      subtitle: "Платформа за училищна и гражданска координация."
+      subtitle: "Платформа за училищна координация в МГ \"Академик Кирил Попов\" - Пловдив."
     }
   );
 }
@@ -213,7 +213,7 @@ export default function AppShell() {
           <div className="brand-mark">MG</div>
           <div>
             <p className="brand-title">MG Events</p>
-            <p className="brand-subtitle">Училищна платформа</p>
+            <p className="brand-subtitle">МГ "Академик Кирил Попов" - Пловдив</p>
           </div>
         </div>
 
@@ -237,12 +237,14 @@ export default function AppShell() {
         </nav>
 
         <div className="side-user">
-          <div className="side-user__avatar">{userInitial}</div>
-          <div>
-            <p className="side-user__name">{user?.username || "Потребител"}</p>
-            <p className="side-user__role">{toBgRole(user?.role)}</p>
+          <div className="side-user__identity">
+            <div className="side-user__avatar">{userInitial}</div>
+            <div className="side-user__copy">
+              <p className="side-user__name">{user?.username || "Потребител"}</p>
+              <p className="side-user__role">{toBgRole(user?.role)}</p>
+            </div>
           </div>
-          <button type="button" className="btn btn-danger btn-sm" onClick={handleLogout}>
+          <button type="button" className="btn btn-danger btn-sm side-user__logout" onClick={handleLogout}>
             <LogOut size={14} />
             Изход
           </button>

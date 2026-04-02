@@ -1,6 +1,7 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import api, { getApiErrorMessage } from "../api/api";
+import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { formatDateTime } from "../utils/formatDateTime";
 import "./MapPage.css";
@@ -43,6 +44,16 @@ const ZONE_LABELS = {
   lab: "Лаборатория",
   zone: "Обща зона"
 };
+
+const PIN_CATEGORIES = [
+  "Поддръжка",
+  "Безопасност",
+  "Хигиена",
+  "Оборудване",
+  "Организация",
+  "Спортна база",
+  "Друго"
+];
 
 function room(id, x, y, w, h, label, kind, sub = "") {
   return { id, x, y, w, h, label, kind, sub };
@@ -109,6 +120,22 @@ function projectPath(path, projection) {
   });
 }
 
+function transformPolygon(points, anchorX, anchorY, scale) {
+  return points.map(([x, y]) => [
+    Math.round((anchorX + (x - anchorX) * scale) * 100) / 100,
+    Math.round((anchorY + (y - anchorY) * scale) * 100) / 100
+  ]);
+}
+
+function polygonToPath(points) {
+  if (!points.length) return "";
+  const [startX, startY] = points[0];
+  return `M${startX} ${startY} ${points
+    .slice(1)
+    .map(([x, y]) => `L${x} ${y}`)
+    .join(" ")} Z`;
+}
+
 const CAMPUS_SOURCE_FRAME = fitInside(70, 24, 860, 650, 1000 / 1240);
 const CAMPUS_SOURCE_PROJECTION = {
   scale: CAMPUS_SOURCE_FRAME.w / 1000,
@@ -123,8 +150,34 @@ const ch = (value) => Math.round(value * CAMPUS_SOURCE_PROJECTION.scale * 100) /
 const projectCampusPolygon = (points) => points.map(([x, y]) => [cx(x), cy(y)]);
 
 const CAMPUS_OUTER_PATH_SOURCE = "M24 18 L918 18 L918 840 L996 840 L996 1220 L554 1220 L554 840 L24 840 Z";
-const CAMPUS_MAIN_PATH_SOURCE =
-  "M80 82 L228 82 L228 98 L348 98 L348 168 L598 168 L598 200 L268 200 L268 236 L516 236 L516 348 L198 348 L198 650 L232 650 L232 712 L198 712 L198 678 L80 678 L80 210 L148 210 L148 82 Z";
+const CAMPUS_MAIN_SHAPE_SOURCE = [
+  [80, 80],
+  [196, 80],
+  [196, 176],
+  [242, 176],
+  [242, 190],
+  [514, 190],
+  [514, 132],
+  [591, 132],
+  [591, 88],
+  [869, 88],
+  [869, 171],
+  [762, 171],
+  [762, 233],
+  [573, 233],
+  [573, 302],
+  [223, 302],
+  [223, 934],
+  [669, 934],
+  [669, 1105],
+  [191, 1105],
+  [191, 934],
+  [113, 934],
+  [113, 248],
+  [80, 248]
+];
+const CAMPUS_MAIN_SHAPE_SCALED = transformPolygon(CAMPUS_MAIN_SHAPE_SOURCE, 80, 80, 0.735);
+const CAMPUS_MAIN_PATH_SOURCE = polygonToPath(CAMPUS_MAIN_SHAPE_SCALED);
 const CAMPUS_OUTER_POLYGON = projectCampusPolygon([
   [24, 18],
   [918, 18],
@@ -135,29 +188,7 @@ const CAMPUS_OUTER_POLYGON = projectCampusPolygon([
   [554, 840],
   [24, 840]
 ]);
-const CAMPUS_MAIN_POLYGON = projectCampusPolygon([
-  [80, 82],
-  [228, 82],
-  [228, 98],
-  [348, 98],
-  [348, 168],
-  [598, 168],
-  [598, 200],
-  [268, 200],
-  [268, 236],
-  [516, 236],
-  [516, 348],
-  [198, 348],
-  [198, 650],
-  [232, 650],
-  [232, 712],
-  [198, 712],
-  [198, 678],
-  [80, 678],
-  [80, 210],
-  [148, 210],
-  [148, 82]
-]);
+const CAMPUS_MAIN_POLYGON = projectCampusPolygon(CAMPUS_MAIN_SHAPE_SCALED);
 
 const CAMPUS_ROOMS = [
   room("main-block-north", cx(80), cy(82), cw(188), ch(128), "Голяма сграда", "special", "северно крило"),
@@ -538,6 +569,7 @@ function toSvgPoint(event, svg) {
 function buildVisuals(pins, roomAnchors, cellSize = 28, zoom = 1, activePinId = null) {
   const roomBuckets = new Map();
   const freePins = [];
+  const clusterablePins = [];
 
   pins.forEach((pin) => {
     if (!pin.roomId) {
@@ -553,22 +585,13 @@ function buildVisuals(pins, roomAnchors, cellSize = 28, zoom = 1, activePinId = 
   });
 
   const visuals = [];
-  const buckets = new Map();
-  [...freePins]
-    .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .forEach((pin) => {
-    const key = `${Math.round(pin.x / cellSize)}:${Math.round(pin.y / cellSize)}`;
-    if (!buckets.has(key)) buckets.set(key, []);
-    buckets.get(key).push(pin);
-    });
+  clusterablePins.push(
+    ...[...freePins].sort((a, b) => (b.score || 0) - (a.score || 0))
+  );
 
   roomBuckets.forEach((bucketPins, key) => {
     if (bucketPins.length < ROOM_CLUSTER_THRESHOLD) {
-      bucketPins.forEach((pin) => {
-        const bucketKey = `${Math.round(pin.x / cellSize)}:${Math.round(pin.y / cellSize)}`;
-        if (!buckets.has(bucketKey)) buckets.set(bucketKey, []);
-        buckets.get(bucketKey).push(pin);
-      });
+      clusterablePins.push(...bucketPins);
       return;
     }
 
@@ -594,33 +617,49 @@ function buildVisuals(pins, roomAnchors, cellSize = 28, zoom = 1, activePinId = 
     });
   });
 
-  buckets.forEach((bucketPins) => {
+  const proximityGroups = [];
+  const clusterRadius = Math.max(26, cellSize * 1.35);
+
+  clusterablePins.forEach((pin) => {
+    const group = proximityGroups.find((entry) => {
+      const dx = pin.x - entry.x;
+      const dy = pin.y - entry.y;
+      return Math.sqrt(dx * dx + dy * dy) <= clusterRadius;
+    });
+
+    if (!group) {
+      proximityGroups.push({
+        x: pin.x,
+        y: pin.y,
+        pins: [pin]
+      });
+      return;
+    }
+
+    group.pins.push(pin);
+    group.x = group.pins.reduce((sum, item) => sum + item.x, 0) / group.pins.length;
+    group.y = group.pins.reduce((sum, item) => sum + item.y, 0) / group.pins.length;
+  });
+
+  proximityGroups.forEach((group) => {
+    const bucketPins = group.pins;
     if (bucketPins.length === 1) {
       const pin = bucketPins[0];
       visuals.push({ type: "pin", pin, x: pin.x, y: pin.y, stackSize: 1 });
       return;
     }
 
-    const cx = bucketPins.reduce((sum, item) => sum + item.x, 0) / bucketPins.length;
-    const cy = bucketPins.reduce((sum, item) => sum + item.y, 0) / bucketPins.length;
-    const spiderfyLimit = zoom >= 1.6 ? 12 : zoom >= 1.25 ? 8 : 5;
-
-    if (bucketPins.length <= spiderfyLimit || bucketPins.some((pin) => pin.id === activePinId)) {
-      bucketPins.forEach((pin, index) => {
-        const angle = (Math.PI * 2 * index) / bucketPins.length;
-        const radius = 14 + Math.min(20, bucketPins.length * 2.2) + Math.max(0, (1.4 - zoom) * 7);
-        visuals.push({
-          type: "pin",
-          pin,
-          x: cx + Math.cos(angle) * radius,
-          y: cy + Math.sin(angle) * radius,
-          stackSize: bucketPins.length
-        });
-      });
-      return;
-    }
-
-    visuals.push({ type: "cluster", id: `cluster-${Math.round(cx)}-${Math.round(cy)}`, x: cx, y: cy, count: bucketPins.length, pins: bucketPins });
+    const cx = group.x;
+    const cy = group.y;
+    visuals.push({
+      type: "cluster",
+      id: `cluster-${Math.round(cx)}-${Math.round(cy)}`,
+      x: cx,
+      y: cy,
+      count: bucketPins.length,
+      pins: bucketPins,
+      containsActive: bucketPins.some((pin) => pin.id === activePinId)
+    });
   });
 
   return visuals;
@@ -752,6 +791,7 @@ function getLegacyFallbackSlot(pin, index) {
 export default function MapPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const toast = useToast();
   const svgRef = useRef(null);
   const handledPreviewPinRef = useRef(null);
@@ -777,16 +817,24 @@ export default function MapPage() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState(PIN_CATEGORIES[0]);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
+  const [editingPinId, setEditingPinId] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editCategory, setEditCategory] = useState(PIN_CATEGORIES[0]);
+  const [editPhotoFile, setEditPhotoFile] = useState(null);
+  const [editPhotoPreview, setEditPhotoPreview] = useState("");
+  const [removeEditPhoto, setRemoveEditPhoto] = useState(false);
 
   const [search, setSearch] = useState("");
-  const [roomSearch, setRoomSearch] = useState("");
   const [roomFilter, setRoomFilter] = useState("all");
   const [zoneFilter, setZoneFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [minScore, setMinScore] = useState(-20);
+  const [scoreOrder, setScoreOrder] = useState("latest");
   const [onlyWithPhoto, setOnlyWithPhoto] = useState(false);
 
   const [loading, setLoading] = useState(false);
@@ -797,7 +845,6 @@ export default function MapPage() {
   const rooms = useMemo(() => getRooms(layerId), [layerId]);
   const currentProjection = useMemo(() => getLayerProjection(layerId), [layerId]);
   const deferredSearch = useDeferredValue(search);
-  const deferredRoomSearch = useDeferredValue(roomSearch);
 
   useEffect(() => {
     const fetchPins = async () => {
@@ -805,7 +852,7 @@ export default function MapPage() {
         const response = await api.get("/event-pins");
         setPins(response.data?.items || response.data || []);
       } catch (requestError) {
-        setError(getApiErrorMessage(requestError, "Неуспешно зареждане на маркерите."));
+        setError(getApiErrorMessage(requestError, "Неуспешно зареждане на пиновете."));
       }
     };
 
@@ -814,7 +861,7 @@ export default function MapPage() {
 
   useEffect(() => {
     if (searchParams.get("create") === "1") {
-      setFeedback("Кликни върху картата, избери стая/зона и публикувай маркер.");
+      setFeedback("Кликни върху картата, избери стая или зона и публикувай пин.");
     }
   }, [searchParams]);
 
@@ -827,6 +874,17 @@ export default function MapPage() {
     setPhotoPreview(preview);
     return () => URL.revokeObjectURL(preview);
   }, [photoFile]);
+
+  useEffect(() => {
+    if (!editPhotoFile) {
+      setEditPhotoPreview("");
+      return;
+    }
+
+    const preview = URL.createObjectURL(editPhotoFile);
+    setEditPhotoPreview(preview);
+    return () => URL.revokeObjectURL(preview);
+  }, [editPhotoFile]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -859,14 +917,16 @@ export default function MapPage() {
         const screenPoint = projectPoint(rawX, rawY, layerProjection);
         return {
           ...pin,
+          category: pin.category || "Поддръжка",
           layerId: rawLayerId,
+          layerLabel: pin.layerLabel || layerLabel(parseLayerId(rawLayerId).view, parseLayerId(rawLayerId).floor),
           rawX,
           rawY,
           x: screenPoint.x,
           y: screenPoint.y,
-          roomId: roomData?.id || null,
-          roomLabel: roomData?.label || null,
-          roomKind: roomData?.kind || null,
+          roomId: roomData?.id || pin.zoneId || null,
+          roomLabel: roomData?.label || pin.zoneLabel || null,
+          roomKind: roomData?.kind || pin.zoneKind || null,
           roomSubLabel: roomData?.sub || "",
           isLegacyMapped: !decoded,
           score: pin.score || 0,
@@ -892,28 +952,19 @@ export default function MapPage() {
     setActiveCluster(null);
     setActivePinId(targetPin.id);
     focusOnPoint(targetPin.x, targetPin.y, getFocusZoomForView(parsedLayer.view, "pin"));
-    setFeedback(`Отворен е маркерът "${targetPin.title}". За преглед на друг маркер използвай десен бутон.`);
+    setFeedback(`Отворен е пинът "${targetPin.title}". За преглед на друг пин използвай десен бутон.`);
   }, [normalizedPins, searchParams]);
 
 
   const layerPins = useMemo(() => normalizedPins.filter((pin) => pin.layerId === layerId), [normalizedPins, layerId]);
-  const roomPinCounts = useMemo(() => {
-    const counts = new Map();
-    normalizedPins.forEach((pin) => {
-      if (!pin.roomId) return;
-      const key = `${pin.layerId}::${pin.roomId}`;
-      counts.set(key, (counts.get(key) || 0) + 1);
-    });
-    return counts;
-  }, [normalizedPins]);
 
   const filteredPins = useMemo(() => {
     const query = deferredSearch.trim().toLowerCase();
     return layerPins.filter((pin) => {
-      if (pin.score < minScore) return false;
       if (onlyWithPhoto && !pin.photoUrl) return false;
       if (roomFilter !== "all" && pin.roomId !== roomFilter) return false;
       if (zoneFilter !== "all" && pin.roomKind !== zoneFilter) return false;
+      if (categoryFilter !== "all" && pin.category !== categoryFilter) return false;
       if (dateFrom) {
         const fromBoundary = new Date(`${dateFrom}T00:00:00`);
         if (new Date(pin.createdAt) < fromBoundary) return false;
@@ -923,10 +974,10 @@ export default function MapPage() {
         if (new Date(pin.createdAt) > toBoundary) return false;
       }
       if (!query) return true;
-      const haystack = `${pin.title || ""} ${pin.description || ""} ${pin.createdByUsername || ""} ${pin.roomLabel || ""} ${pin.roomId || ""}`.toLowerCase();
+      const haystack = `${pin.title || ""} ${pin.description || ""} ${pin.createdByUsername || ""} ${pin.roomLabel || ""} ${pin.roomId || ""} ${pin.category || ""}`.toLowerCase();
       return haystack.includes(query);
     });
-  }, [dateFrom, dateTo, deferredSearch, layerPins, minScore, onlyWithPhoto, roomFilter, zoneFilter]);
+  }, [categoryFilter, dateFrom, dateTo, deferredSearch, layerPins, onlyWithPhoto, roomFilter, zoneFilter]);
 
   const displayRooms = useMemo(() => rooms.map((item) => projectRect(item, currentProjection)), [rooms, currentProjection]);
   const roomAnchors = useMemo(() => {
@@ -946,36 +997,15 @@ export default function MapPage() {
   );
   const activePin = useMemo(() => normalizedPins.find((pin) => pin.id === activePinId) || null, [normalizedPins, activePinId]);
   const kinds = useMemo(() => Array.from(new Set(rooms.map((item) => item.kind))).filter(Boolean), [rooms]);
-  const roomSearchResults = useMemo(() => {
-    const query = deferredRoomSearch.trim().toLowerCase();
-    const source = query
-      ? ROOM_DIRECTORY.filter((item) => {
-          const haystack = `${item.id} ${item.label} ${item.sub || ""} ${ZONE_LABELS[item.kind] || item.kind} ${layerLabel(item.view, item.floor)}`.toLowerCase();
-          return haystack.includes(query);
-        })
-      : ROOM_DIRECTORY.filter((item) => item.layerId === layerId);
-
-    return source
-      .map((item) => ({
-        ...item,
-        pinCount: roomPinCounts.get(`${item.layerId}::${item.id}`) || 0
-      }))
-      .sort((a, b) => {
-        if (b.pinCount !== a.pinCount) return b.pinCount - a.pinCount;
-        return a.label.localeCompare(b.label, "bg");
-      })
-      .slice(0, query ? 24 : 12);
-  }, [deferredRoomSearch, layerId, roomPinCounts]);
-  const pinExplorerPins = useMemo(
-    () =>
-      [...filteredPins]
-        .sort((a, b) => {
-          if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        })
-        .slice(0, 12),
-    [filteredPins]
+  const availableCategories = useMemo(
+    () => Array.from(new Set([...PIN_CATEGORIES, ...normalizedPins.map((pin) => pin.category).filter(Boolean)])).sort((a, b) => a.localeCompare(b, "bg")),
+    [normalizedPins]
   );
+  const canManageActivePin = useMemo(() => {
+    if (!activePin || !user) return false;
+    return Number(user.id) === Number(activePin.createdByUserId) || user.role === "Admin" || user.role === "Teacher";
+  }, [activePin, user]);
+  const pinExplorerPins = useMemo(() => sortPinsForPreview(filteredPins).slice(0, 12), [filteredPins, scoreOrder]);
 
   useEffect(() => {
     setRoomFilter((current) => (current !== "all" && !rooms.some((item) => item.id === current) ? "all" : current));
@@ -1034,53 +1064,84 @@ export default function MapPage() {
     setActiveCluster(null);
   };
 
-  const focusRoom = (roomData) => {
-    if (!roomData) return;
-    if (roomData.id === "small-building") {
-      handleBuildingNavigate("small");
-      return;
-    }
-    if (roomData.id?.startsWith("main-block")) {
-      handleBuildingNavigate("main");
-      return;
-    }
-    const centerX = roomData.x + roomData.w / 2;
-    const centerY = roomData.y + roomData.h / 2;
-    const targetLayerId = toLayerId(roomData.view, roomData.floor);
-    const targetProjection = getLayerProjection(targetLayerId);
-    const screenCenter = projectPoint(centerX, centerY, targetProjection);
-    setView(roomData.view);
-    setFloor(roomData.floor);
-    setRoomFilter(roomData.id);
-    setZoneFilter("all");
-    setSelectedPoint({ x: centerX, y: centerY });
-    setActivePinId(null);
-    setActiveCluster(null);
-    focusOnPoint(screenCenter.x, screenCenter.y, getFocusZoomForView(roomData.view, "room"));
-    setFeedback(`Фокусирана зона: ${roomData.label}`);
-  };
 
   const clearFilters = () => {
     setSearch("");
-    setRoomSearch("");
     setRoomFilter("all");
     setZoneFilter("all");
+    setCategoryFilter("all");
     setDateFrom("");
     setDateTo("");
-    setMinScore(-20);
+    setScoreOrder("latest");
     setOnlyWithPhoto(false);
     setActiveCluster(null);
     setFeedback("Филтрите са изчистени.");
   };
 
-  const sortPinsForPreview = (items) =>
-    [...items].sort((a, b) => {
-      if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
+  const resetPinEditor = () => {
+    setEditingPinId(null);
+    setEditTitle("");
+    setEditDescription("");
+    setEditCategory(PIN_CATEGORIES[0]);
+    setEditPhotoFile(null);
+    setEditPhotoPreview("");
+    setRemoveEditPhoto(false);
+  };
+
+  const startEditingPin = (pin) => {
+    if (!pin) return;
+    setEditingPinId(pin.id);
+    setEditTitle(pin.title || "");
+    setEditDescription(pin.description || "");
+    setEditCategory(pin.category || PIN_CATEGORIES[0]);
+    setEditPhotoFile(null);
+    setEditPhotoPreview("");
+    setRemoveEditPhoto(false);
+    setActiveCluster(null);
+  };
+
+  const handleEditPhotoChange = (file) => {
+    if (!file) {
+      setEditPhotoFile(null);
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setError("Разрешени са само изображения.");
+      return;
+    }
+
+    if (file.size > MAX_UPLOAD_SIZE) {
+      setError("Снимката трябва да е до 5MB.");
+      return;
+    }
+
+    setError("");
+    setEditPhotoFile(file);
+    setRemoveEditPhoto(false);
+  };
+
+  function sortPinsForPreview(items) {
+    return [...items].sort((a, b) => {
+      const scoreDelta = (b.score || 0) - (a.score || 0);
+
+      if (scoreOrder === "latest") {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+
+      if (scoreOrder === "lowest") {
+        if (scoreDelta !== 0) return -scoreDelta;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+
+      if (scoreDelta !== 0) return scoreDelta;
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
+  }
 
   const openPinPreview = (pin, { focus = true } = {}) => {
     if (!pin) return;
+    resetPinEditor();
     setActivePinId(pin.id);
     setActiveCluster(null);
     if (focus) {
@@ -1090,6 +1151,7 @@ export default function MapPage() {
 
   const openClusterPreview = (cluster, { focus = true } = {}) => {
     if (!cluster) return;
+    resetPinEditor();
     setActiveCluster({
       id: cluster.id,
       roomId: cluster.roomId || null,
@@ -1137,7 +1199,7 @@ export default function MapPage() {
       return;
     }
 
-    setFeedback("Няма маркери за преглед в избраната зона.");
+    setFeedback("Няма пинове за преглед в избраната зона.");
   };
 
   const handleMapClick = (event) => {
@@ -1263,15 +1325,19 @@ export default function MapPage() {
   const handleCreate = async (event) => {
     event.preventDefault();
     if (!selectedPoint) {
-      setError("Кликни върху картата, за да избереш място.");
+      setError("Кликни върху картата, за да избереш място за пина.");
       return;
     }
     if (!selectedRoomData) {
-      setError("Маркер може да се създаде само във валидна зона или помещение.");
+      setError("Пин може да се създаде само във валидна зона или помещение.");
       return;
     }
     if (!title.trim()) {
       setError("Заглавието е задължително.");
+      return;
+    }
+    if (!category) {
+      setError("Избери категория за пина.");
       return;
     }
 
@@ -1283,11 +1349,12 @@ export default function MapPage() {
       const encoded = encodeLayerPoint(layerId, selectedPoint.x, selectedPoint.y);
       const formData = new FormData();
       formData.append("title", title.trim());
+      formData.append("category", category);
 
       const roomLabel = selectedRoomData?.label || "";
       const zoneLabel = selectedRoomData?.kind ? ZONE_LABELS[selectedRoomData.kind] : "";
       const roomSubLabel = selectedRoomData?.sub ? `Детайл: ${selectedRoomData.sub}` : "";
-      const enrichedDescription = [description.trim(), roomLabel ? `Стая/зона: ${roomLabel}` : "", roomSubLabel, zoneLabel ? `Тип: ${zoneLabel}` : ""]
+      const enrichedDescription = [description.trim(), roomLabel ? `Зона: ${roomLabel}` : "", roomSubLabel, zoneLabel ? `Тип: ${zoneLabel}` : ""]
         .filter(Boolean)
         .join(" | ");
 
@@ -1302,13 +1369,14 @@ export default function MapPage() {
       setLatestCreatedPin(createdPin);
       setTitle("");
       setDescription("");
+      setCategory(PIN_CATEGORIES[0]);
       setPhotoFile(null);
       setPhotoPreview("");
       setSelectedPoint(null);
-      setFeedback("Маркерът е създаден успешно.");
-      toast?.success("Маркерът е публикуван.");
+      setFeedback("Пинът е създаден успешно.");
+      toast?.success("Пинът е публикуван.");
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, "Неуспешно създаване на маркер."));
+      setError(getApiErrorMessage(requestError, "Неуспешно създаване на пин."));
     } finally {
       setLoading(false);
     }
@@ -1334,39 +1402,70 @@ export default function MapPage() {
         })
       );
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, "Неуспешно гласуване за маркер."));
+      setError(getApiErrorMessage(requestError, "Неуспешно гласуване за пин."));
     }
   };
 
-  const handleUseMyLocation = () => {
-    if (!navigator.geolocation) {
-      setError("Геолокацията не се поддържа от този браузър.");
+  const handleUpdatePin = async (event) => {
+    event.preventDefault();
+    if (!editingPinId) return;
+
+    if (!editTitle.trim()) {
+      setError("Заглавието е задължително.");
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const decoded = decodeLayerPoint(position.coords.latitude, position.coords.longitude);
-        if (decoded) {
-          const parsed = parseLayerId(decoded.layerId);
-          const projection = getLayerProjection(decoded.layerId);
-          const screenPoint = projectPoint(decoded.x, decoded.y, projection);
-          setView(parsed.view);
-          setFloor(parsed.floor);
-          setSelectedPoint({ x: decoded.x, y: decoded.y });
-          focusOnPoint(screenPoint.x, screenPoint.y, getFocusZoomForView(parsed.view, "pin"));
-          setFeedback("Локацията е позиционирана върху учебната карта.");
-          return;
-        }
+    setLoading(true);
+    setError("");
 
-        setView("campus");
-        setFloor(1);
-        setSelectedPoint({ x: W / 2, y: H / 2 });
-        focusOnPoint(W / 2, H / 2, 1);
-        setFeedback("Локацията е извън учебната карта. Показан е кампус изглед.");
-      },
-      () => setError("Няма достъп до текущата локация.")
-    );
+    try {
+      const formData = new FormData();
+      formData.append("title", editTitle.trim());
+      formData.append("description", editDescription.trim());
+      formData.append("category", editCategory);
+      formData.append("removePhoto", removeEditPhoto ? "true" : "false");
+      if (editPhotoFile) formData.append("photo", editPhotoFile);
+
+      const response = await api.put(`/event-pins/${editingPinId}`, formData);
+      const updatedPin = response.data;
+      setPins((prev) => prev.map((pin) => (pin.id === editingPinId ? updatedPin : pin)));
+      setActivePinId(updatedPin.id);
+      resetPinEditor();
+      setFeedback("Пинът е обновен успешно.");
+      toast?.success("Промените по пина са запазени.");
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, "Неуспешно обновяване на пина."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePin = async (pinId) => {
+    if (!pinId) return;
+    if (!window.confirm("Сигурен ли си, че искаш да изтриеш този пин?")) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      await api.delete(`/event-pins/${pinId}`);
+      setPins((prev) => prev.filter((pin) => pin.id !== pinId));
+      setActivePinId((current) => (current === pinId ? null : current));
+      setActiveCluster((current) => {
+        if (!current) return null;
+        const nextPins = current.pins.filter((pin) => pin.id !== pinId);
+        return nextPins.length
+          ? { ...current, pins: nextPins, count: nextPins.length }
+          : null;
+      });
+      resetPinEditor();
+      setFeedback("Пинът е изтрит.");
+      toast?.success("Пинът е изтрит.");
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, "Неуспешно изтриване на пина."));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderBase = () => {
@@ -1462,7 +1561,7 @@ export default function MapPage() {
           <text x={cx(500)} y={cy(96)} className="indoor-campus-subtitle" textAnchor="middle">
             Голяма сграда · Малка сграда · Двор и спортни зони
           </text>
-          <text x={cx(344)} y={cy(312)} className="indoor-campus-label" textAnchor="middle">
+          <text x={cx(370)} y={cy(468)} className="indoor-campus-label" textAnchor="middle">
             Голяма сграда
           </text>
           <text x={cx(800)} y={cy(456)} className="indoor-campus-label" textAnchor="middle">
@@ -1522,12 +1621,9 @@ export default function MapPage() {
         <aside className="map-panel card card-pad">
           <div className="split-row">
             <h2 className="section-title">Интерактивна карта</h2>
-            <button className="btn btn-ghost btn-sm" type="button" onClick={handleUseMyLocation}>
-              Моята локация
-            </button>
           </div>
           <p className="section-subtitle">
-            SVG карта от `TestMap` с етажи, стаи, търсене по зона и backend пинове.
+            SVG карта на МГ "Академик Кирил Попов" - Пловдив с етажи, стаи, зони и пинове по реални училищни казуси.
           </p>
 
           {error && <p className="error-msg">{error}</p>}
@@ -1589,13 +1685,20 @@ export default function MapPage() {
               className="input"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Заглавие"
+              placeholder="Заглавие на пина"
             />
+            <select value={category} onChange={(event) => setCategory(event.target.value)}>
+              {PIN_CATEGORIES.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
             <textarea
               className="textarea"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Описание"
+              placeholder={'Опиши казуса за МГ "Академик Кирил Попов"...'}
             />
             <input
               className="input"
@@ -1606,17 +1709,17 @@ export default function MapPage() {
             {photoPreview && <img src={photoPreview} alt="Преглед" className="photo-preview" />}
             <p className="muted">
               {selectedRoomData
-                ? `Маркерът ще бъде записан в: ${selectedRoomData.label}${selectedRoomData.sub ? ` · ${selectedRoomData.sub}` : ""}`
-                : "Избери валидна зона от картата. Маркер извън зона не може да се публикува."}
+                ? `Пинът ще бъде записан в: ${selectedRoomData.label}${selectedRoomData.sub ? ` · ${selectedRoomData.sub}` : ""}`
+                : "Избери валидна зона от картата. Пин извън зона не може да се публикува."}
             </p>
             <button className="btn btn-primary" type="submit" disabled={loading || !selectedRoomData}>
-              {loading ? "Публикуване..." : "Създай маркер"}
+              {loading ? "Публикуване..." : "Създай пин"}
             </button>
           </form>
 
           {latestCreatedPin && (
             <div className="map-created-flow">
-              <h3>Последно добавен маркер</h3>
+              <h3>Последно добавен пин</h3>
               <p className="muted">{latestCreatedPin.title}</p>
               <div className="map-created-flow__actions">
                 <button
@@ -1675,6 +1778,14 @@ export default function MapPage() {
                 </option>
               ))}
             </select>
+            <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+              <option value="all">Всички категории</option>
+              {availableCategories.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
             <div className="map-date-grid">
               <label className="map-date-field">
                 <span>{"\u041E\u0442 \u0434\u0430\u0442\u0430"}</span>
@@ -1695,61 +1806,22 @@ export default function MapPage() {
                 />
               </label>
             </div>
-            <label className="map-score-label" htmlFor="min-score">
-              Минимална оценка: <strong>{minScore}</strong>
+            <label className="map-score-label" htmlFor="score-order">
+              Подредба по оценка
             </label>
-            <input
-              id="min-score"
-              type="range"
-              min={-20}
-              max={50}
-              value={minScore}
-              onChange={(event) => setMinScore(Number(event.target.value))}
-            />
+            <select id="score-order" value={scoreOrder} onChange={(event) => setScoreOrder(event.target.value)}>
+              <option value="latest">Най-нови</option>
+              <option value="highest">Най-висока оценка</option>
+              <option value="lowest">Най-ниска оценка</option>
+            </select>
             <label className="map-check">
               <input
                 type="checkbox"
                 checked={onlyWithPhoto}
                 onChange={(event) => setOnlyWithPhoto(event.target.checked)}
               />
-              Показвай само маркери със снимка
+              Показвай само пинове със снимка
             </label>
-          </div>
-
-          <div className="map-room-directory">
-            <div className="split-row">
-              <h3>Навигация по стаи и зони</h3>
-              <span className="pill">{roomSearchResults.length} резултата</span>
-            </div>
-            <input
-              className="input"
-              value={roomSearch}
-              onChange={(event) => setRoomSearch(event.target.value)}
-              placeholder="Търси стая, етаж, зона или сграда"
-            />
-            <div className="map-room-directory__list">
-              {roomSearchResults.length === 0 ? (
-                <p className="muted">Няма намерени стаи или зони.</p>
-              ) : (
-                roomSearchResults.map((item) => (
-                  <button
-                    key={`${item.layerId}-${item.id}`}
-                    type="button"
-                    className={`map-room-entry ${roomFilter === item.id && layerId === item.layerId ? "is-active" : ""}`}
-                    onClick={() => focusRoom(item)}
-                  >
-                    <div>
-                      <strong>{item.label}</strong>
-                      <span className="muted">
-                        {layerLabel(item.view, item.floor)} · {ZONE_LABELS[item.kind] || item.kind}
-                        {item.sub ? ` · ${item.sub}` : ""}
-                      </span>
-                    </div>
-                    <span className="pill">{item.pinCount}</span>
-                  </button>
-                ))
-              )}
-            </div>
           </div>
 
           <div className="map-pin-explorer">
@@ -1790,73 +1862,7 @@ export default function MapPage() {
             </div>
           </div>
 
-          {activeCluster && (
-            <div className="map-cluster-card">
-              <div className="split-row">
-                <h3>{activeCluster.roomLabel || "Струпване"} · {activeCluster.count} пина</h3>
-                {activeCluster.roomId && (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => {
-                      setRoomFilter(activeCluster.roomId);
-                      setZoneFilter("all");
-                    }}
-                  >
-                    Само тази зона
-                  </button>
-                )}
-              </div>
-              <div className="map-cluster-list">
-                {activeCluster.pins.map((pin) => (
-                  <button
-                    key={pin.id}
-                    type="button"
-                    className="map-cluster-item"
-                    onClick={() => {
-                      openPinPreview(pin, { focus: true });
-                    }}
-                  >
-                    <strong>{pin.title}</strong>
-                    <span>
-                      {pin.roomLabel || "\u0411\u0435\u0437 \u0441\u0442\u0430\u044F"} - {pin.createdByUsername || "\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u0435\u043D"} - {formatDateTime(pin.createdAt)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {activePin && (
-            <article className="map-active-pin card card-pad">
-              <div className="split-row">
-                <h3>{activePin.title}</h3>
-                <span className="pill">{activePin.roomLabel || "Без стая"}</span>
-              </div>
-              {activePin.roomSubLabel && <p className="muted">{activePin.roomSubLabel}</p>}
-              {activePin.description && <p>{activePin.description}</p>}
-              {activePin.photoUrl && <img src={resolveMediaUrl(activePin.photoUrl)} alt="Снимка към маркер" />}
-              <p className="muted">
-                {activePin.createdByUsername || "Неизвестен"} · {formatDateTime(activePin.createdAt)}
-              </p>
-              <div className="pin-votes">
-                <button className="btn btn-ghost btn-sm" type="button" onClick={() => handleVote(activePin.id, 1)}>
-                  <span aria-hidden="true">{"\uD83D\uDC4D"}</span> {activePin.upvotes}
-                </button>
-                <button className="btn btn-ghost btn-sm" type="button" onClick={() => handleVote(activePin.id, -1)}>
-                  <span aria-hidden="true">{"\uD83D\uDC4E"}</span> {activePin.downvotes}
-                </button>
-                <span className="pill">Оценка {activePin.score}</span>
-              </div>
-              <p className="muted">Слой: {layerLabel(parseLayerId(activePin.layerId).view, parseLayerId(activePin.layerId).floor)}</p>
-              <Link
-                className="btn btn-danger btn-sm"
-                to={`/report?type=Pin&id=${activePin.id}&label=${encodeURIComponent(activePin.title || "Маркер")}&returnTo=${encodeURIComponent(`${location.pathname}${location.search || ""}`)}`}
-              >
-                Докладвай маркер
-              </Link>
-            </article>
-          )}
         </aside>
 
         <div className="map-canvas card map-canvas-indoor">
@@ -1964,7 +1970,7 @@ export default function MapPage() {
                       transform={`translate(${item.x} ${item.y})`}
                       onClick={(event) => {
                         event.stopPropagation();
-                        setFeedback("\u0417\u0430 \u043F\u0440\u0435\u0433\u043B\u0435\u0434 \u043D\u0430 \u043A\u043B\u044A\u0441\u0442\u0435\u0440\u0430 \u0438\u0437\u043F\u043E\u043B\u0437\u0432\u0430\u0439 \u0434\u0435\u0441\u0435\u043D \u0431\u0443\u0442\u043E\u043D.");
+                        openClusterPreview(item);
                       }}
                       onContextMenu={(event) => {
                         event.preventDefault();
@@ -1988,7 +1994,7 @@ export default function MapPage() {
                     transform={`translate(${item.x} ${item.y})`}
                     onClick={(event) => {
                       event.stopPropagation();
-                      setFeedback("\u0417\u0430 \u043F\u0440\u0435\u0433\u043B\u0435\u0434 \u043D\u0430 \u043C\u0430\u0440\u043A\u0435\u0440\u0430 \u0438\u0437\u043F\u043E\u043B\u0437\u0432\u0430\u0439 \u0434\u0435\u0441\u0435\u043D \u0431\u0443\u0442\u043E\u043D.");
+                      openPinPreview({ ...item.pin, x: item.x, y: item.y });
                     }}
                     onContextMenu={(event) => {
                       event.preventDefault();
@@ -1996,14 +2002,9 @@ export default function MapPage() {
                       openPinPreview({ ...item.pin, x: item.x, y: item.y });
                     }}
                     >
-                    <circle className="pin-hit" r={item.stackSize > 1 ? 18 : 16} />
-                    <circle className="pin-ring" r={item.stackSize > 1 ? 11 : 9} />
+                    <circle className="pin-hit" r="16" />
+                    <circle className="pin-ring" r="9" />
                     <circle className="pin-core" r="6" />
-                    {item.stackSize > 1 && (
-                      <text className="pin-stack" textAnchor="middle" dy="4">
-                        {item.stackSize}
-                      </text>
-                    )}
                   </g>
                 );
               })}
@@ -2016,6 +2017,186 @@ export default function MapPage() {
               )}
             </g>
           </svg>
+
+          {(activeCluster || activePin) && (
+            <div className="map-floating-panel">
+              {activeCluster && !activePin && (
+                <article className="map-floating-panel__card map-floating-panel__card--compact">
+                  <div className="split-row">
+                    <div>
+                      <h3>{activeCluster.roomLabel || "Струпване"} · {activeCluster.count} пина</h3>
+                      <p className="muted">
+                        Показани са всички {activeCluster.pins.length} пина от избраната зона. Скролирай надолу за останалите.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setActiveCluster(null)}
+                    >
+                      Затвори
+                    </button>
+                  </div>
+
+                  {activeCluster.roomId && (
+                    <div className="map-floating-panel__actions">
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => {
+                          setRoomFilter(activeCluster.roomId);
+                          setZoneFilter("all");
+                        }}
+                      >
+                        Само тази зона
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="map-floating-panel__scroll">
+                    {activeCluster.pins.map((pin) => (
+                      <button
+                        key={pin.id}
+                        type="button"
+                        className="map-cluster-item"
+                        onClick={() => openPinPreview(pin, { focus: true })}
+                      >
+                        <strong>{pin.title}</strong>
+                        <span>
+                          {(pin.category || "Без категория")} · {pin.roomLabel || "Без зона"} · {pin.createdByUsername || "Неизвестен"} · {formatDateTime(pin.createdAt)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </article>
+              )}
+
+              {activePin && (
+                <article className="map-floating-panel__card map-floating-panel__card--compact">
+                  <div className="split-row">
+                    <div>
+                      <h3>{activePin.title}</h3>
+                      <div className="map-floating-panel__tags">
+                        <span className="pill">{activePin.roomLabel || "Без зона"}</span>
+                        <span className="pill">{activePin.category || "Без категория"}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => {
+                        setActivePinId(null);
+                        resetPinEditor();
+                      }}
+                    >
+                      Затвори
+                    </button>
+                  </div>
+
+                  {editingPinId === activePin.id ? (
+                    <form className="map-floating-panel__form" onSubmit={handleUpdatePin}>
+                      <input
+                        className="input"
+                        value={editTitle}
+                        onChange={(event) => setEditTitle(event.target.value)}
+                        placeholder="Заглавие"
+                      />
+                      <select value={editCategory} onChange={(event) => setEditCategory(event.target.value)}>
+                        {availableCategories.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                      <textarea
+                        className="textarea"
+                        value={editDescription}
+                        onChange={(event) => setEditDescription(event.target.value)}
+                        placeholder="Описание"
+                      />
+                      <input
+                        className="input"
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => handleEditPhotoChange(event.target.files?.[0] || null)}
+                      />
+                      {(editPhotoPreview || (activePin.photoUrl && !removeEditPhoto)) && (
+                        <img
+                          src={editPhotoPreview || resolveMediaUrl(activePin.photoUrl)}
+                          alt="Преглед на пина"
+                          className="map-floating-panel__image"
+                        />
+                      )}
+                      {activePin.photoUrl && !editPhotoPreview && (
+                        <label className="map-check">
+                          <input
+                            type="checkbox"
+                            checked={removeEditPhoto}
+                            onChange={(event) => setRemoveEditPhoto(event.target.checked)}
+                          />
+                          Премахни текущата снимка
+                        </label>
+                      )}
+                      <div className="map-floating-panel__actions">
+                        <button type="submit" className="btn btn-primary btn-sm" disabled={loading}>
+                          {loading ? "Запазване..." : "Запази"}
+                        </button>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={resetPinEditor}>
+                          Откажи
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      {activePin.roomSubLabel && <p className="muted">{activePin.roomSubLabel}</p>}
+                      {activePin.description && <p>{activePin.description}</p>}
+                      {activePin.photoUrl && (
+                        <img
+                          src={resolveMediaUrl(activePin.photoUrl)}
+                          alt="Снимка към пина"
+                          className="map-floating-panel__image"
+                        />
+                      )}
+                      <p className="muted">
+                        {activePin.createdByUsername || "Неизвестен"} · {formatDateTime(activePin.createdAt)}
+                      </p>
+                      <p className="muted">
+                        {activePin.layerLabel || layerLabel(parseLayerId(activePin.layerId).view, parseLayerId(activePin.layerId).floor)}
+                        {activePin.roomSubLabel ? ` · ${activePin.roomSubLabel}` : ""}
+                      </p>
+                      <div className="pin-votes">
+                        <button className="btn btn-ghost btn-sm" type="button" onClick={() => handleVote(activePin.id, 1)}>
+                          <span aria-hidden="true">{"\uD83D\uDC4D"}</span> {activePin.upvotes}
+                        </button>
+                        <button className="btn btn-ghost btn-sm" type="button" onClick={() => handleVote(activePin.id, -1)}>
+                          <span aria-hidden="true">{"\uD83D\uDC4E"}</span> {activePin.downvotes}
+                        </button>
+                        <span className="pill">Оценка {activePin.score}</span>
+                      </div>
+                      <div className="map-floating-panel__actions">
+                        {canManageActivePin && (
+                          <>
+                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => startEditingPin(activePin)}>
+                              Редактирай
+                            </button>
+                            <button type="button" className="btn btn-danger btn-sm" onClick={() => handleDeletePin(activePin.id)}>
+                              Изтрий
+                            </button>
+                          </>
+                        )}
+                        <Link
+                          className="btn btn-danger btn-sm"
+                          to={`/report?type=Pin&id=${activePin.id}&label=${encodeURIComponent(activePin.title || "Пин")}&returnTo=${encodeURIComponent(`${location.pathname}${location.search || ""}`)}`}
+                        >
+                          Докладвай пина
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </article>
+              )}
+            </div>
+          )}
         </div>
       </section>
     </div>

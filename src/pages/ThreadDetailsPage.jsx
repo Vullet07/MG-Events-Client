@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Minus, Plus, RotateCcw, X } from "lucide-react";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
@@ -15,6 +15,7 @@ const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
 export default function ThreadDetailsPage() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const toast = useToast();
@@ -32,6 +33,14 @@ export default function ThreadDetailsPage() {
   const [parentPostId, setParentPostId] = useState(null);
   const [newPhotoFile, setNewPhotoFile] = useState(null);
   const [newPhotoPreview, setNewPhotoPreview] = useState("");
+  const [editingThread, setEditingThread] = useState(false);
+  const [threadTitleDraft, setThreadTitleDraft] = useState("");
+  const [editingPostId, setEditingPostId] = useState(null);
+  const [editPostTitle, setEditPostTitle] = useState("");
+  const [editPostContent, setEditPostContent] = useState("");
+  const [editPostPhotoFile, setEditPostPhotoFile] = useState(null);
+  const [editPostPhotoPreview, setEditPostPhotoPreview] = useState("");
+  const [removeEditPostPhoto, setRemoveEditPostPhoto] = useState(false);
 
   const [openActionsPostId, setOpenActionsPostId] = useState(null);
   const [visibleImages, setVisibleImages] = useState({});
@@ -133,6 +142,22 @@ export default function ThreadDetailsPage() {
   }, [newPhotoFile]);
 
   useEffect(() => {
+    setThreadTitleDraft(thread?.title || "");
+  }, [thread?.title]);
+
+  useEffect(() => {
+    if (!editPostPhotoFile) {
+      setEditPostPhotoPreview("");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(editPostPhotoFile);
+    setEditPostPhotoPreview(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [editPostPhotoFile]);
+
+  useEffect(() => {
     const targetPostId = Number(searchParams.get("postId"));
     if (!Number.isInteger(targetPostId) || targetPostId <= 0 || posts.length === 0) return undefined;
 
@@ -174,6 +199,11 @@ export default function ThreadDetailsPage() {
   };
 
   const postTree = useMemo(() => buildTree(sortedPosts), [sortedPosts]);
+  const isModerator = user?.role === "Admin" || user?.role === "Teacher";
+  const isThreadOwner = Number(user?.id) === Number(thread?.createdByUserId);
+  const canManageThread = !!user && (isThreadOwner || isModerator);
+  const canPinThread = !!user && isModerator;
+  const isNewsThread = /^\[(news|новина)\]/i.test(thread?.title || "");
 
   const handlePhotoChange = (file) => {
     if (!file) {
@@ -201,14 +231,17 @@ export default function ThreadDetailsPage() {
 
   const handleReply = async (e) => {
     e.preventDefault();
-    if (!newPost.trim()) return;
+    if (!newTitle.trim()) {
+      setError("Заглавието на публикацията е задължително.");
+      return;
+    }
 
     setLoading(true);
     setError("");
 
     try {
       const formData = new FormData();
-      formData.append("title", newTitle || "");
+      formData.append("title", newTitle.trim());
       formData.append("content", newPost.trim());
       formData.append("threadId", String(Number(id)));
       if (parentPostId) formData.append("parentPostId", String(parentPostId));
@@ -225,6 +258,156 @@ export default function ThreadDetailsPage() {
       toast?.success("Отговорът е публикуван.");
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || "Неуспешно публикуване на отговор.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startEditingPost = (post) => {
+    setEditingPostId(post.id);
+    setEditPostTitle(post.title || "");
+    setEditPostContent(post.content || "");
+    setEditPostPhotoFile(null);
+    setEditPostPhotoPreview("");
+    setRemoveEditPostPhoto(false);
+    setOpenActionsPostId(null);
+  };
+
+  const resetPostEditor = () => {
+    setEditingPostId(null);
+    setEditPostTitle("");
+    setEditPostContent("");
+    setEditPostPhotoFile(null);
+    setEditPostPhotoPreview("");
+    setRemoveEditPostPhoto(false);
+  };
+
+  const handleEditPostPhotoChange = (file) => {
+    if (!file) {
+      setEditPostPhotoFile(null);
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setError("Разрешени са само изображения.");
+      return;
+    }
+
+    if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      setError("Снимката трябва да е до 5MB.");
+      return;
+    }
+
+    setError("");
+    setEditPostPhotoFile(file);
+    setRemoveEditPostPhoto(false);
+  };
+
+  const handleUpdateThread = async (event) => {
+    event.preventDefault();
+    if (!threadTitleDraft.trim()) {
+      setError("Заглавието е задължително.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const nextTitle = isNewsThread && !/^\[(news|новина)\]/i.test(threadTitleDraft.trim())
+        ? `[News] ${threadTitleDraft.trim()}`
+        : threadTitleDraft.trim();
+
+      const response = await api.put(`/forum-threads/${id}`, { title: nextTitle });
+      setThread(response.data);
+      setEditingThread(false);
+      toast?.success("Темата е обновена.");
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || "Неуспешно обновяване на темата.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleThreadState = async (action) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      await api.put(`/forum-threads/${id}/${action}`);
+      setThread((prev) => {
+        if (!prev) return prev;
+        if (action === "lock") return { ...prev, isLocked: true };
+        if (action === "unlock") return { ...prev, isLocked: false };
+        if (action === "pin") return { ...prev, isPinned: true };
+        if (action === "unpin") return { ...prev, isPinned: false };
+        return prev;
+      });
+      toast?.success("Статусът на темата е обновен.");
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || "Неуспешна промяна на статуса на темата.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteThread = async () => {
+    if (!window.confirm("Сигурен ли си, че искаш да изтриеш тази тема?")) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      await api.delete(`/forum-threads/${id}`);
+      toast?.success("Темата е изтрита.");
+      navigate(isNewsThread ? "/news" : "/threads");
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || "Неуспешно изтриване на темата.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePost = async (postId) => {
+    if (!editPostTitle.trim()) {
+      setError("Заглавието на публикацията е задължително.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("title", editPostTitle.trim());
+      formData.append("content", editPostContent.trim());
+      formData.append("removePhoto", removeEditPostPhoto ? "true" : "false");
+      if (editPostPhotoFile) formData.append("photo", editPostPhotoFile);
+
+      const response = await api.put(`/ForumPosts/${postId}`, formData);
+      setPosts((prev) => prev.map((post) => (post.id === postId ? response.data : post)));
+      resetPostEditor();
+      toast?.success("Публикацията е обновена.");
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || "Неуспешно обновяване на публикацията.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Сигурен ли си, че искаш да изтриеш тази публикация?")) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      await api.delete(`/ForumPosts/${postId}`);
+      setPosts((prev) => prev.filter((post) => post.id !== postId));
+      resetPostEditor();
+      toast?.success("Публикацията е изтрита.");
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || "Неуспешно изтриване на публикацията.");
     } finally {
       setLoading(false);
     }
@@ -307,6 +490,11 @@ export default function ThreadDetailsPage() {
 
   const renderPosts = (items, depth = 0) =>
     items.map((post) => (
+      (() => {
+        const canManagePost = Number(user?.id) === Number(post.userId) || isModerator;
+        const isEditingThisPost = editingPostId === post.id;
+
+        return (
       <article
         key={post.id}
         ref={(node) => {
@@ -360,6 +548,29 @@ export default function ThreadDetailsPage() {
                   Отговори
                 </button>
 
+                {canManagePost && (
+                  <button
+                    type="button"
+                    className="post-actions-item"
+                    onClick={() => startEditingPost(post)}
+                  >
+                    Редактирай
+                  </button>
+                )}
+
+                {canManagePost && (
+                  <button
+                    type="button"
+                    className="post-actions-item"
+                    onClick={() => {
+                      setOpenActionsPostId(null);
+                      handleDeletePost(post.id);
+                    }}
+                  >
+                    Изтрий
+                  </button>
+                )}
+
                 <Link
                   className="post-actions-item"
                   to={`/report?type=Post&id=${post.id}&label=${encodeURIComponent(
@@ -377,32 +588,82 @@ export default function ThreadDetailsPage() {
         {post.parentPostId && <span className="reply-pill">Отговор към друга публикация</span>}
         {post.title && <h3 className="post-title">{post.title}</h3>}
 
-        {post.photoUrl && (
-          <div className="post-photo-wrap">
-            <button className="btn btn-ghost btn-sm" type="button" onClick={() => toggleImage(post.id)}>
-              {visibleImages[post.id] ? "Скрий снимка" : "Покажи снимка"}
-            </button>
-            {visibleImages[post.id] && (
+        {isEditingThisPost ? (
+          <div className="form-grid reply-form-grid">
+            <input
+              className="input"
+              value={editPostTitle}
+              onChange={(event) => setEditPostTitle(event.target.value)}
+              placeholder="Заглавие на публикацията"
+            />
+            <textarea
+              className="textarea"
+              value={editPostContent}
+              onChange={(event) => setEditPostContent(event.target.value)}
+              placeholder="Допълнително описание (по желание)"
+            />
+            <input
+              className="input"
+              type="file"
+              accept="image/*"
+              onChange={(event) => handleEditPostPhotoChange(event.target.files?.[0] || null)}
+            />
+            {(editPostPhotoPreview || (post.photoUrl && !removeEditPostPhoto)) && (
               <img
-                src={post.photoUrl}
-                alt="Снимка към публикация"
-                className="post-photo"
-                onLoad={(e) => handleImageLoad(post.id, e)}
-                onClick={() => openImage(post.id, post.photoUrl)}
-                style={
-                  imageSizes[post.id]
-                    ? {
-                        width: `${imageSizes[post.id].width}px`,
-                        height: `${imageSizes[post.id].height}px`
-                      }
-                    : undefined
-                }
+                src={editPostPhotoPreview || post.photoUrl}
+                alt="Преглед"
+                className="photo-preview"
               />
             )}
+            {post.photoUrl && !editPostPhotoPreview && (
+              <label className="map-check">
+                <input
+                  type="checkbox"
+                  checked={removeEditPostPhoto}
+                  onChange={(event) => setRemoveEditPostPhoto(event.target.checked)}
+                />
+                Премахни снимката
+              </label>
+            )}
+            <div className="thread-inline-actions">
+              <button className="btn btn-primary btn-sm" type="button" onClick={() => handleUpdatePost(post.id)} disabled={loading}>
+                {loading ? "Запазване..." : "Запази"}
+              </button>
+              <button className="btn btn-ghost btn-sm" type="button" onClick={resetPostEditor}>
+                Откажи
+              </button>
+            </div>
           </div>
-        )}
+        ) : (
+          <>
+            {post.photoUrl && (
+              <div className="post-photo-wrap">
+                <button className="btn btn-ghost btn-sm" type="button" onClick={() => toggleImage(post.id)}>
+                  {visibleImages[post.id] ? "Скрий снимка" : "Покажи снимка"}
+                </button>
+                {visibleImages[post.id] && (
+                  <img
+                    src={post.photoUrl}
+                    alt="Снимка към публикация"
+                    className="post-photo"
+                    onLoad={(e) => handleImageLoad(post.id, e)}
+                    onClick={() => openImage(post.id, post.photoUrl)}
+                    style={
+                      imageSizes[post.id]
+                        ? {
+                            width: `${imageSizes[post.id].width}px`,
+                            height: `${imageSizes[post.id].height}px`
+                          }
+                        : undefined
+                    }
+                  />
+                )}
+              </div>
+            )}
 
-        <p className="post-content">{post.content}</p>
+            {post.content ? <p className="post-content">{post.content}</p> : null}
+          </>
+        )}
 
         <div className="post-votes">
           <button
@@ -423,6 +684,8 @@ export default function ThreadDetailsPage() {
 
         {post.replies?.length > 0 && <div className="post-replies">{renderPosts(post.replies, depth + 1)}</div>}
       </article>
+        );
+      })()
     ));
 
   if (loadingThread) {
@@ -453,7 +716,26 @@ export default function ThreadDetailsPage() {
     <div className="page-shell thread-details-page">
       <section className="thread-header card card-pad">
         <div>
-          <h2 className="section-title">{thread.title}</h2>
+          {editingThread ? (
+            <form className="thread-title-form" onSubmit={handleUpdateThread}>
+              <input
+                className="input"
+                value={threadTitleDraft}
+                onChange={(event) => setThreadTitleDraft(event.target.value)}
+                placeholder="Заглавие на темата"
+              />
+              <div className="thread-inline-actions">
+                <button className="btn btn-primary btn-sm" type="submit" disabled={loading}>
+                  {loading ? "Запазване..." : "Запази"}
+                </button>
+                <button className="btn btn-ghost btn-sm" type="button" onClick={() => setEditingThread(false)}>
+                  Откажи
+                </button>
+              </div>
+            </form>
+          ) : (
+            <h2 className="section-title">{thread.title}</h2>
+          )}
           <p className="section-subtitle">
             Създадена от{" "}
             <Link className="link" to={`/users/${thread.createdByUserId}`}>
@@ -470,6 +752,34 @@ export default function ThreadDetailsPage() {
           )}
           {thread.isPinned && <span className="tag">Закачена</span>}
           {thread.isLocked && <span className="tag tag-danger">Заключена</span>}
+          {canManageThread && (
+            <button className="btn btn-ghost btn-sm" type="button" onClick={() => setEditingThread((prev) => !prev)}>
+              {editingThread ? "Скрий редакция" : "Редактирай"}
+            </button>
+          )}
+          {canManageThread && (
+            <button
+              className="btn btn-ghost btn-sm"
+              type="button"
+              onClick={() => handleThreadState(thread.isLocked ? "unlock" : "lock")}
+            >
+              {thread.isLocked ? "Отключи" : "Заключи"}
+            </button>
+          )}
+          {canPinThread && (
+            <button
+              className="btn btn-secondary btn-sm"
+              type="button"
+              onClick={() => handleThreadState(thread.isPinned ? "unpin" : "pin")}
+            >
+              {thread.isPinned ? "Откачи" : "Закачи"}
+            </button>
+          )}
+          {canManageThread && (
+            <button className="btn btn-danger btn-sm" type="button" onClick={handleDeleteThread}>
+              Изтрий темата
+            </button>
+          )}
           <Link
             className="btn btn-danger btn-sm"
             to={`/report?type=Thread&id=${thread.id}&label=${encodeURIComponent(
@@ -524,13 +834,13 @@ export default function ThreadDetailsPage() {
               className="input"
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="Заглавие на публикацията (по желание)"
+              placeholder="Заглавие на публикацията"
             />
             <textarea
               className="textarea"
               value={newPost}
               onChange={(e) => setNewPost(e.target.value)}
-              placeholder="Напиши своя отговор..."
+              placeholder="Допълнително описание (по желание)"
             />
             <input
               className="input"

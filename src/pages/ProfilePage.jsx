@@ -145,7 +145,7 @@ export default function ProfilePage() {
   const tabTitle = useMemo(() => {
     if (activeTab === "threads") return "Теми";
     if (activeTab === "posts") return "Публикации";
-    return "Маркери";
+    return "Пинове";
   }, [activeTab]);
 
   const renderTabItems = () => {
@@ -164,7 +164,7 @@ export default function ProfilePage() {
 
     if (activeTab === "posts") {
       return currentTab.items.map((item) => (
-        <Link key={item.postId} to={`/threads/${item.threadId}`} className="profile-content-item">
+        <Link key={item.postId} to={`/threads/${item.threadId}?postId=${item.postId}`} className="profile-content-item">
           <strong>{item.title || item.threadTitle || "Публикация"}</strong>
           <p>{item.content}</p>
           <span className="muted">{formatDateTime(item.createdAt)}</span>
@@ -173,11 +173,16 @@ export default function ProfilePage() {
     }
 
     return currentTab.items.map((item) => (
-      <div key={item.pinId} className="profile-content-item">
+      <Link key={item.pinId} to={`/map?pinId=${item.pinId}`} className="profile-content-item">
         <strong>{item.title}</strong>
         {item.description && <p>{item.description}</p>}
+        <span className="muted">
+          {item.category || "Без категория"}
+          {item.layerLabel ? ` · ${item.layerLabel}` : ""}
+          {item.zoneLabel ? ` · ${item.zoneLabel}` : ""}
+        </span>
         <span className="muted">{formatDateTime(item.createdAt)}</span>
-      </div>
+      </Link>
     ));
   };
 
@@ -219,7 +224,7 @@ export default function ProfilePage() {
           <div className="profile-stats">
             <div><strong>{profile.threadsCount || 0}</strong>Теми</div>
             <div><strong>{profile.postsCount || 0}</strong>Публикации</div>
-            <div><strong>{profile.pinsCount || 0}</strong>Маркери</div>
+            <div><strong>{profile.pinsCount || 0}</strong>Пинове</div>
           </div>
         </article>
 
@@ -276,7 +281,7 @@ export default function ProfilePage() {
               className={`btn btn-ghost btn-sm ${activeTab === "pins" ? "tab-active" : ""}`}
               onClick={() => setActiveTab("pins")}
             >
-              Маркери
+              Пинове
             </button>
           </div>
         </div>
