@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { register } from "../api/authApi";
 import "./RegisterPage.css";
 
@@ -14,14 +14,14 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    if (!username.trim() || !email.trim() || !password || !confirmPassword || !gradeLevel) {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!username.trim() || !normalizedEmail || !password || !confirmPassword || !gradeLevel) {
       setError("Всички полета са задължителни.");
       return;
     }
@@ -31,16 +31,25 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!normalizedEmail.endsWith("@schoolmath.eu")) {
+      setError("Използвай училищен имейл адрес, завършващ на @schoolmath.eu.");
+      return;
+    }
+
     setLoading(true);
     try {
       await register({
         username: username.trim(),
-        email: email.trim(),
+        email: normalizedEmail,
         password,
         gradeLevel: Number(gradeLevel)
       });
-      setSuccess("Регистрацията е успешна. Пренасочване към вход...");
-      setTimeout(() => navigate("/login"), 1600);
+      setSuccess("Регистрацията е записана. Провери пощата си в @schoolmath.eu и активирай профила, преди да влезеш.");
+      setUsername("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setGradeLevel("8");
     } catch (err) {
       setError(err?.apiMessage || err?.message || "Неуспешна регистрация.");
     } finally {
@@ -80,7 +89,7 @@ export default function RegisterPage() {
 
         <input
           type="email"
-          placeholder="Имейл"
+          placeholder="Училищен имейл (@schoolmath.eu)"
           className="input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}

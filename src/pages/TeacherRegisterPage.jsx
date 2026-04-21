@@ -1,10 +1,9 @@
 ﻿import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { registerTeacherRequest } from "../api/authApi";
 import "./RegisterPage.css";
 
 export default function TeacherRegisterPage() {
-  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +18,9 @@ export default function TeacherRegisterPage() {
     setError("");
     setSuccess("");
 
-    if (!username.trim() || !email.trim() || !password || !confirmPassword) {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!username.trim() || !normalizedEmail || !password || !confirmPassword) {
       setError("Всички задължителни полета трябва да са попълнени.");
       return;
     }
@@ -29,16 +30,25 @@ export default function TeacherRegisterPage() {
       return;
     }
 
+    if (!normalizedEmail.endsWith("@schoolmath.eu")) {
+      setError("Използвай служебен имейл адрес, завършващ на @schoolmath.eu.");
+      return;
+    }
+
     setLoading(true);
     try {
       await registerTeacherRequest({
         username: username.trim(),
-        email: email.trim(),
+        email: normalizedEmail,
         password,
         motivation: motivation.trim()
       });
-      setSuccess("Заявката е изпратена. Необходимо е одобрение от администратор.");
-      setTimeout(() => navigate("/login"), 1800);
+      setSuccess("Заявката е записана. Потвърди имейла си в @schoolmath.eu, след което тя ще чака одобрение от администратор.");
+      setUsername("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setMotivation("");
     } catch (err) {
       setError(err?.apiMessage || err?.message || "Неуспешно изпращане на заявка.");
     } finally {
@@ -63,13 +73,13 @@ export default function TeacherRegisterPage() {
 
       <form className="auth-card" onSubmit={handleSubmit}>
         <h2>Заявка за регистрация на учител</h2>
-        <p className="muted">Попълни формата и изчакай одобрение.</p>
+        <p className="muted">Попълни формата, потвърди имейла си и изчакай одобрение.</p>
 
         {error && <p className="error-msg">{error}</p>}
         {success && <p className="success-msg">{success}</p>}
 
         <input className="input" placeholder="Потребителско име" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <input className="input" placeholder="Имейл" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input className="input" placeholder="Служебен имейл (@schoolmath.eu)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input className="input" placeholder="Парола" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <input className="input" placeholder="Потвърди паролата" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
 

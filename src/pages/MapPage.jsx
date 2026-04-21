@@ -814,6 +814,8 @@ export default function MapPage() {
   const [latestCreatedPin, setLatestCreatedPin] = useState(null);
   const [activePinId, setActivePinId] = useState(null);
   const [activeCluster, setActiveCluster] = useState(null);
+  const [pinActionsOpen, setPinActionsOpen] = useState(false);
+  const [pinDeleteCandidate, setPinDeleteCandidate] = useState(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -832,10 +834,16 @@ export default function MapPage() {
   const [roomFilter, setRoomFilter] = useState("all");
   const [zoneFilter, setZoneFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [scoreOrder, setScoreOrder] = useState("latest");
   const [onlyWithPhoto, setOnlyWithPhoto] = useState(false);
+  const [clusterSearch, setClusterSearch] = useState("");
+  const [clusterCategoryFilter, setClusterCategoryFilter] = useState("all");
+  const [clusterDateFrom, setClusterDateFrom] = useState("");
+  const [clusterDateTo, setClusterDateTo] = useState("");
+  const [clusterSort, setClusterSort] = useState("latest");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -849,15 +857,16 @@ export default function MapPage() {
   useEffect(() => {
     const fetchPins = async () => {
       try {
-        const response = await api.get("/event-pins");
+        const response = await api.get(`/event-pins?status=${statusFilter}`);
         setPins(response.data?.items || response.data || []);
+        setError("");
       } catch (requestError) {
         setError(getApiErrorMessage(requestError, "Неуспешно зареждане на пиновете."));
       }
     };
 
     fetchPins();
-  }, []);
+  }, [statusFilter]);
 
   useEffect(() => {
     if (searchParams.get("create") === "1") {
@@ -929,6 +938,14 @@ export default function MapPage() {
           roomKind: roomData?.kind || pin.zoneKind || null,
           roomSubLabel: roomData?.sub || "",
           isLegacyMapped: !decoded,
+          isResolved: Boolean(pin.isResolved),
+          resolvedAt: pin.resolvedAt || null,
+          resolvedByUserId: pin.resolvedByUserId || null,
+          resolvedByUsername: pin.resolvedByUsername || "",
+          archivedAt: pin.archivedAt || null,
+          resolveConfirmationCount: pin.resolveConfirmationCount || 0,
+          resolveThreshold: pin.resolveThreshold || 0,
+          hasCurrentUserResolveConfirmation: Boolean(pin.hasCurrentUserResolveConfirmation),
           score: pin.score || 0,
           upvotes: pin.upvotes || 0,
           downvotes: pin.downvotes || 0,
@@ -1001,17 +1018,54 @@ export default function MapPage() {
     () => Array.from(new Set([...PIN_CATEGORIES, ...normalizedPins.map((pin) => pin.category).filter(Boolean)])).sort((a, b) => a.localeCompare(b, "bg")),
     [normalizedPins]
   );
+  const clusterAvailableCategories = useMemo(
+    () =>
+      Array.from(new Set((activeCluster?.pins || []).map((pin) => pin.category).filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b, "bg")
+      ),
+    [activeCluster]
+  );
   const canManageActivePin = useMemo(() => {
     if (!activePin || !user) return false;
     return Number(user.id) === Number(activePin.createdByUserId) || user.role === "Admin" || user.role === "Teacher";
   }, [activePin, user]);
   const pinExplorerPins = useMemo(() => sortPinsForPreview(filteredPins).slice(0, 12), [filteredPins, scoreOrder]);
+  const filteredClusterPins = useMemo(() => {
+    if (!activeCluster?.pins?.length) return [];
+
+    const query = clusterSearch.trim().toLowerCase();
+    const filtered = activeCluster.pins.filter((pin) => {
+      if (clusterCategoryFilter !== "all" && pin.category !== clusterCategoryFilter) return false;
+      if (clusterDateFrom) {
+        const fromBoundary = new Date(`${clusterDateFrom}T00:00:00`);
+        if (new Date(pin.createdAt) < fromBoundary) return false;
+      }
+      if (clusterDateTo) {
+        const toBoundary = new Date(`${clusterDateTo}T23:59:59.999`);
+        if (new Date(pin.createdAt) > toBoundary) return false;
+      }
+      if (!query) return true;
+      const haystack = `${pin.title || ""} ${pin.description || ""} ${pin.createdByUsername || ""}`.toLowerCase();
+      return haystack.includes(query);
+    });
+
+    return sortPinsForPreview(filtered, clusterSort);
+  }, [activeCluster, clusterCategoryFilter, clusterDateFrom, clusterDateTo, clusterSearch, clusterSort]);
 
   useEffect(() => {
     setRoomFilter((current) => (current !== "all" && !rooms.some((item) => item.id === current) ? "all" : current));
     setZoneFilter((current) => (current !== "all" && !kinds.includes(current) ? "all" : current));
     setActiveCluster(null);
   }, [kinds, rooms]);
+
+  useEffect(() => {
+    setActiveCluster(null);
+  }, [statusFilter]);
+
+  useEffect(() => {
+    setPinActionsOpen(false);
+    setPinDeleteCandidate(null);
+  }, [activeCluster, activePinId, editingPinId]);
 
   const selectedRoomData = useMemo(() => {
     if (!selectedPoint) return null;
@@ -1070,6 +1124,7 @@ export default function MapPage() {
     setRoomFilter("all");
     setZoneFilter("all");
     setCategoryFilter("all");
+    setStatusFilter("active");
     setDateFrom("");
     setDateTo("");
     setScoreOrder("latest");
@@ -1121,15 +1176,15 @@ export default function MapPage() {
     setRemoveEditPhoto(false);
   };
 
-  function sortPinsForPreview(items) {
+  function sortPinsForPreview(items, mode = scoreOrder) {
     return [...items].sort((a, b) => {
       const scoreDelta = (b.score || 0) - (a.score || 0);
 
-      if (scoreOrder === "latest") {
+      if (mode === "latest") {
         return new Date(b.createdAt) - new Date(a.createdAt);
       }
 
-      if (scoreOrder === "lowest") {
+      if (mode === "lowest") {
         if (scoreDelta !== 0) return -scoreDelta;
         return new Date(b.createdAt) - new Date(a.createdAt);
       }
@@ -1152,12 +1207,17 @@ export default function MapPage() {
   const openClusterPreview = (cluster, { focus = true } = {}) => {
     if (!cluster) return;
     resetPinEditor();
+    setClusterSearch("");
+    setClusterCategoryFilter("all");
+    setClusterDateFrom("");
+    setClusterDateTo("");
+    setClusterSort(scoreOrder);
     setActiveCluster({
       id: cluster.id,
       roomId: cluster.roomId || null,
       roomLabel: cluster.roomLabel || "Струпване",
       count: cluster.count,
-      pins: sortPinsForPreview(cluster.pins)
+      pins: [...cluster.pins]
     });
     setActivePinId(null);
     if (focus) {
@@ -1440,9 +1500,14 @@ export default function MapPage() {
     }
   };
 
+  const requestDeletePin = (pinId) => {
+    if (!pinId) return;
+    setPinDeleteCandidate(pinId);
+    setPinActionsOpen(true);
+  };
+
   const handleDeletePin = async (pinId) => {
     if (!pinId) return;
-    if (!window.confirm("Сигурен ли си, че искаш да изтриеш този пин?")) return;
 
     setLoading(true);
     setError("");
@@ -1459,10 +1524,79 @@ export default function MapPage() {
           : null;
       });
       resetPinEditor();
+      setPinDeleteCandidate(null);
+      setPinActionsOpen(false);
       setFeedback("Пинът е изтрит.");
       toast?.success("Пинът е изтрит.");
     } catch (requestError) {
       setError(getApiErrorMessage(requestError, "Неуспешно изтриване на пина."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResolveToggle = async (pin) => {
+    if (!pin?.id) return;
+
+    const nextAction = pin.isResolved ? "unresolve" : "resolve";
+    const fallbackMessage = pin.isResolved
+      ? "Пинът отново е активен."
+      : "Потвърждението ти е записано.";
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await api.post(`/event-pins/${pin.id}/${nextAction}`);
+      const updatedPin = response.data;
+      const successMessage = response.apiMessage || fallbackMessage;
+
+      setPins((prev) => {
+        const exists = prev.some((entry) => entry.id === updatedPin.id);
+
+        if (statusFilter === "active" && updatedPin.isResolved) {
+          return prev.filter((entry) => entry.id !== updatedPin.id);
+        }
+
+        if (statusFilter === "resolved" && !updatedPin.isResolved) {
+          return prev.filter((entry) => entry.id !== updatedPin.id);
+        }
+
+        if (exists) {
+          return prev.map((entry) => (entry.id === updatedPin.id ? updatedPin : entry));
+        }
+
+        return [updatedPin, ...prev];
+      });
+
+      setActiveCluster((current) => {
+        if (!current) return null;
+        const nextPins = current.pins
+          .map((entry) => (entry.id === updatedPin.id ? { ...entry, ...updatedPin } : entry))
+          .filter((entry) => {
+            if (statusFilter === "active" && entry.isResolved) return false;
+            if (statusFilter === "resolved" && !entry.isResolved) return false;
+            return true;
+          });
+
+        if (nextPins.length === 0) return null;
+        return { ...current, pins: nextPins, count: nextPins.length };
+      });
+
+      if (statusFilter === "active" && updatedPin.isResolved) {
+        setActivePinId(null);
+      } else if (statusFilter === "resolved" && !updatedPin.isResolved) {
+        setActivePinId(null);
+      } else {
+        setActivePinId(updatedPin.id);
+      }
+
+      setPinActionsOpen(false);
+      setPinDeleteCandidate(null);
+      setFeedback(successMessage);
+      toast?.success(successMessage);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, "Неуспешна промяна на статуса на пина."));
     } finally {
       setLoading(false);
     }
@@ -1555,12 +1689,6 @@ export default function MapPage() {
           <path d={`M${cx(744)} ${cy(1082)} Q${cx(766)} ${cy(1113)} ${cx(744)} ${cy(1144)}`} className="campus-court-arc soft" />
           <path d={`M${cx(952)} ${cy(1082)} Q${cx(930)} ${cy(1113)} ${cx(952)} ${cy(1144)}`} className="campus-court-arc soft" />
 
-          <text x={cx(500)} y={cy(62)} className="indoor-campus-title" textAnchor="middle">
-            МГ „Акад. Кирил Попов“
-          </text>
-          <text x={cx(500)} y={cy(96)} className="indoor-campus-subtitle" textAnchor="middle">
-            Голяма сграда · Малка сграда · Двор и спортни зони
-          </text>
           <text x={cx(370)} y={cy(468)} className="indoor-campus-label" textAnchor="middle">
             Голяма сграда
           </text>
@@ -1586,12 +1714,6 @@ export default function MapPage() {
           <rect x="0" y="0" width={W} height={H} className="indoor-grid-bg" />
           <rect x="56" y="62" width="888" height="576" rx="28" className="floor-frame-panel" />
           <path d={projectPath(MAIN_HULLS[floor], currentProjection)} className="indoor-floor-hull" />
-          <text x="76" y="96" className="indoor-floor-title">
-            Голяма сграда · Етаж {floor}
-          </text>
-          <text x="76" y="118" className="indoor-floor-subtitle">
-            Запазена структура по оригиналната скица
-          </text>
         </g>
       );
     }
@@ -1605,12 +1727,6 @@ export default function MapPage() {
         <rect x="72" y="68" width="856" height="564" rx="28" className="floor-frame-panel" />
         <rect x={smallShell.x} y={smallShell.y} width={smallShell.w} height={smallShell.h} rx="12" className="indoor-floor-shell" />
         <rect x={smallCorridor.x} y={smallCorridor.y} width={smallCorridor.w} height={smallCorridor.h} rx="8" className="indoor-corridor" />
-        <text x="90" y="102" className="indoor-floor-title">
-          Малка сграда · Етаж {floor}
-        </text>
-        <text x="90" y="124" className="indoor-floor-subtitle">
-          STEM / УПК корпус
-        </text>
       </g>
     );
   };
@@ -1785,6 +1901,11 @@ export default function MapPage() {
                   {option}
                 </option>
               ))}
+            </select>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+              <option value="active">Само активни пинове</option>
+              <option value="resolved">Само решени пинове</option>
+              <option value="all">Всички пинове</option>
             </select>
             <div className="map-date-grid">
               <label className="map-date-field">
@@ -2026,7 +2147,7 @@ export default function MapPage() {
                     <div>
                       <h3>{activeCluster.roomLabel || "Струпване"} · {activeCluster.count} пина</h3>
                       <p className="muted">
-                        Показани са всички {activeCluster.pins.length} пина от избраната зона. Скролирай надолу за останалите.
+                        Показани са {filteredClusterPins.length} от общо {activeCluster.pins.length} пина в избраната зона.
                       </p>
                     </div>
                     <button
@@ -2053,45 +2174,187 @@ export default function MapPage() {
                     </div>
                   )}
 
+                  <div className="map-floating-panel__filters">
+                    <input
+                      className="input"
+                      value={clusterSearch}
+                      onChange={(event) => setClusterSearch(event.target.value)}
+                      placeholder="Търси по заглавие, описание или автор"
+                    />
+                    <select value={clusterCategoryFilter} onChange={(event) => setClusterCategoryFilter(event.target.value)}>
+                      <option value="all">Всички категории</option>
+                      {clusterAvailableCategories.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="map-date-grid">
+                      <label className="map-date-field">
+                        <span>От дата</span>
+                        <input
+                          className="input"
+                          type="date"
+                          value={clusterDateFrom}
+                          onChange={(event) => setClusterDateFrom(event.target.value)}
+                        />
+                      </label>
+                      <label className="map-date-field">
+                        <span>До дата</span>
+                        <input
+                          className="input"
+                          type="date"
+                          value={clusterDateTo}
+                          onChange={(event) => setClusterDateTo(event.target.value)}
+                        />
+                      </label>
+                    </div>
+                    <select value={clusterSort} onChange={(event) => setClusterSort(event.target.value)}>
+                      <option value="latest">Най-нови</option>
+                      <option value="highest">Най-висока оценка</option>
+                      <option value="lowest">Най-ниска оценка</option>
+                    </select>
+                  </div>
+
                   <div className="map-floating-panel__scroll">
-                    {activeCluster.pins.map((pin) => (
-                      <button
-                        key={pin.id}
-                        type="button"
-                        className="map-cluster-item"
-                        onClick={() => openPinPreview(pin, { focus: true })}
-                      >
-                        <strong>{pin.title}</strong>
-                        <span>
-                          {(pin.category || "Без категория")} · {pin.roomLabel || "Без зона"} · {pin.createdByUsername || "Неизвестен"} · {formatDateTime(pin.createdAt)}
-                        </span>
-                      </button>
-                    ))}
+                    {filteredClusterPins.length === 0 ? (
+                      <p className="muted">Няма пинове, които да отговарят на локалните филтри.</p>
+                    ) : (
+                      filteredClusterPins.map((pin) => (
+                        <button
+                          key={pin.id}
+                          type="button"
+                          className="map-cluster-item"
+                          onClick={() => openPinPreview(pin, { focus: true })}
+                        >
+                          <strong>{pin.title}</strong>
+                          <span>
+                            {(pin.category || "Без категория")} · {pin.roomLabel || "Без зона"} · {pin.createdByUsername || "Неизвестен"} · {formatDateTime(pin.createdAt)}
+                          </span>
+                        </button>
+                      ))
+                    )}
                   </div>
                 </article>
               )}
 
               {activePin && (
                 <article className="map-floating-panel__card map-floating-panel__card--compact">
-                  <div className="split-row">
+                  <div className="split-row map-pin-header">
                     <div>
                       <h3>{activePin.title}</h3>
                       <div className="map-floating-panel__tags">
                         <span className="pill">{activePin.roomLabel || "Без зона"}</span>
                         <span className="pill">{activePin.category || "Без категория"}</span>
+                        {activePin.isResolved && <span className="pill">Разрешен</span>}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => {
-                        setActivePinId(null);
-                        resetPinEditor();
-                      }}
-                    >
-                      Затвори
-                    </button>
+                    <div className="map-pin-header__actions">
+                      {editingPinId !== activePin.id && (
+                        <button
+                          type="button"
+                          className="map-pin-actions__trigger"
+                          aria-label="Опции за пина"
+                          onClick={() => {
+                            setPinDeleteCandidate(null);
+                            setPinActionsOpen((current) => !current);
+                          }}
+                        >
+                          ⋯
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => {
+                          setActivePinId(null);
+                          setPinActionsOpen(false);
+                          setPinDeleteCandidate(null);
+                          resetPinEditor();
+                        }}
+                      >
+                        Затвори
+                      </button>
+                    </div>
                   </div>
+
+                  {pinActionsOpen && editingPinId !== activePin.id && (
+                    <div className="map-pin-actions__panel">
+                      {!activePin.isResolved && user && (
+                        <button
+                          type="button"
+                          className="map-pin-actions__item"
+                          disabled={loading || activePin.hasCurrentUserResolveConfirmation}
+                          onClick={() => handleResolveToggle(activePin)}
+                        >
+                          {activePin.hasCurrentUserResolveConfirmation
+                            ? `Вече потвърди (${activePin.resolveConfirmationCount}/${activePin.resolveThreshold})`
+                            : "Потвърди, че е разрешен"}
+                        </button>
+                      )}
+                      {activePin.isResolved && canManageActivePin && (
+                        <button
+                          type="button"
+                          className="map-pin-actions__item"
+                          disabled={loading}
+                          onClick={() => handleResolveToggle(activePin)}
+                        >
+                          Върни като активен
+                        </button>
+                      )}
+                      {canManageActivePin && (
+                        <button
+                          type="button"
+                          className="map-pin-actions__item"
+                          onClick={() => {
+                            setPinActionsOpen(false);
+                            startEditingPin(activePin);
+                          }}
+                        >
+                          Редактирай
+                        </button>
+                      )}
+                      {canManageActivePin && (
+                        <button
+                          type="button"
+                          className="map-pin-actions__item map-pin-actions__item--danger"
+                          onClick={() => requestDeletePin(activePin.id)}
+                        >
+                          Изтрий
+                        </button>
+                      )}
+                      <Link
+                        className="map-pin-actions__item map-pin-actions__item--danger"
+                        to={`/report?type=Pin&id=${activePin.id}&label=${encodeURIComponent(activePin.title || "Пин")}&returnTo=${encodeURIComponent(`${location.pathname}${location.search || ""}`)}`}
+                        onClick={() => setPinActionsOpen(false)}
+                      >
+                        Докладвай пина
+                      </Link>
+                      {pinDeleteCandidate === activePin.id && (
+                        <div className="map-pin-actions__confirm">
+                          <strong>Изтриване на пина?</strong>
+                          <span>Това действие е необратимо.</span>
+                          <div className="map-pin-actions__confirm-actions">
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-sm"
+                              disabled={loading}
+                              onClick={() => handleDeletePin(activePin.id)}
+                            >
+                              Да, изтрий
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => setPinDeleteCandidate(null)}
+                            >
+                              Откажи
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {editingPinId === activePin.id ? (
                     <form className="map-floating-panel__form" onSubmit={handleUpdatePin}>
@@ -2164,32 +2427,25 @@ export default function MapPage() {
                         {activePin.layerLabel || layerLabel(parseLayerId(activePin.layerId).view, parseLayerId(activePin.layerId).floor)}
                         {activePin.roomSubLabel ? ` · ${activePin.roomSubLabel}` : ""}
                       </p>
+                      {!activePin.isResolved && activePin.resolveThreshold > 0 && (
+                        <p className="muted">
+                          Потвърждения за разрешаване: {activePin.resolveConfirmationCount}/{activePin.resolveThreshold}
+                          {activePin.hasCurrentUserResolveConfirmation ? " · Ти вече потвърди." : ""}
+                        </p>
+                      )}
+                      {activePin.isResolved && (
+                        <p className="muted">
+                          Разрешен пин · {activePin.resolvedByUsername || "Без посочен потребител"} · {formatDateTime(activePin.resolvedAt)}
+                        </p>
+                      )}
                       <div className="pin-votes">
-                        <button className="btn btn-ghost btn-sm" type="button" onClick={() => handleVote(activePin.id, 1)}>
+                        <button className="btn btn-ghost btn-sm" type="button" onClick={() => handleVote(activePin.id, 1)} disabled={activePin.isResolved}>
                           <span aria-hidden="true">{"\uD83D\uDC4D"}</span> {activePin.upvotes}
                         </button>
-                        <button className="btn btn-ghost btn-sm" type="button" onClick={() => handleVote(activePin.id, -1)}>
+                        <button className="btn btn-ghost btn-sm" type="button" onClick={() => handleVote(activePin.id, -1)} disabled={activePin.isResolved}>
                           <span aria-hidden="true">{"\uD83D\uDC4E"}</span> {activePin.downvotes}
                         </button>
                         <span className="pill">Оценка {activePin.score}</span>
-                      </div>
-                      <div className="map-floating-panel__actions">
-                        {canManageActivePin && (
-                          <>
-                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => startEditingPin(activePin)}>
-                              Редактирай
-                            </button>
-                            <button type="button" className="btn btn-danger btn-sm" onClick={() => handleDeletePin(activePin.id)}>
-                              Изтрий
-                            </button>
-                          </>
-                        )}
-                        <Link
-                          className="btn btn-danger btn-sm"
-                          to={`/report?type=Pin&id=${activePin.id}&label=${encodeURIComponent(activePin.title || "Пин")}&returnTo=${encodeURIComponent(`${location.pathname}${location.search || ""}`)}`}
-                        >
-                          Докладвай пина
-                        </Link>
                       </div>
                     </>
                   )}
@@ -2202,3 +2458,4 @@ export default function MapPage() {
     </div>
   );
 }
+

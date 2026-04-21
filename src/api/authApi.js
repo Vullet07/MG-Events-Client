@@ -15,6 +15,11 @@ export const registerTeacherRequest = async (data) => {
   return res.data;
 };
 
+export const confirmEmail = async (data) => {
+  const res = await api.post("/Auth/confirm-email", data);
+  return res.data;
+};
+
 export const logout = () => {
   localStorage.removeItem("token");
 };

@@ -15,6 +15,7 @@ import NewsPage from "./pages/NewsPage";
 import MyReportsPage from "./pages/MyReportsPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ConfirmEmailPage from "./pages/ConfirmEmailPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import AppShell from "./components/AppShell";
 import AppLoader from "./components/ui/AppLoader";
@@ -35,6 +36,7 @@ export default function App() {
       <Route path="/login" element={<EntryPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/confirm-email" element={<ConfirmEmailPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/teacher-register" element={<TeacherRegisterPage />} />
 

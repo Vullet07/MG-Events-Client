@@ -56,7 +56,7 @@
 }
 
 .create-thread-card {
-  max-width: 960px;
+  width: 100%;
   display: grid;
   gap: 14px;
 }
@@ -74,27 +74,6 @@
   gap: 8px;
   font-weight: 600;
   color: #701726;
-}
-
-.create-thread-suggestions {
-  display: grid;
-  gap: 10px;
-}
-
-.create-thread-suggestions > span {
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: #7b1b2b;
-}
-
-.create-thread-suggestions__list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.create-thread-suggestions__list .btn {
-  justify-content: flex-start;
 }
 
 .create-thread-note {

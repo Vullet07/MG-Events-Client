@@ -1,4 +1,4 @@
-const roleMap = {
+﻿const roleMap = {
   Admin: "Администратор",
   Teacher: "Учител",
   Student: "Ученик",

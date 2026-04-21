@@ -195,7 +195,7 @@ export default function HomePage() {
     <div className="page-shell">
       <section className="hero dashboard-hero">
         <div>
-          <p className="dashboard-eyebrow">Добре дошъл</p>
+          <p className="dashboard-eyebrow">Здравей</p>
           <h2>
             {user?.username ? `${user.username}` : "Потребител"}
             <span className="dashboard-role">{toBgRole(user?.role)}</span>

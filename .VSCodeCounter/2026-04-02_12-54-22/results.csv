@@ -1,0 +1,49 @@
+"filename", "language", "JavaScript", "JavaScript JSX", "PostCSS", "comment", "blank", "total"
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\App.jsx", "JavaScript JSX", 0, 66, 0, 0, 6, 72
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\api\api.js", "JavaScript", 71, 0, 0, 3, 14, 88
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\api\authApi.js", "JavaScript", 16, 0, 0, 0, 5, 21
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\components\AppShell.css", "PostCSS", 0, 0, 253, 0, 41, 294
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\components\AppShell.jsx", "JavaScript JSX", 0, 280, 0, 0, 28, 308
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\components\ui\AppLoader.jsx", "JavaScript JSX", 0, 13, 0, 0, 2, 15
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\components\ui\EmptyState.jsx", "JavaScript JSX", 0, 27, 0, 0, 2, 29
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\components\ui\Skeleton.jsx", "JavaScript JSX", 0, 12, 0, 0, 2, 14
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\context\AuthContext.jsx", "JavaScript JSX", 0, 110, 0, 0, 17, 127
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\context\ToastContext.jsx", "JavaScript JSX", 0, 81, 0, 0, 12, 93
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\index.css", "PostCSS", 0, 0, 437, 0, 77, 514
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\main.jsx", "JavaScript JSX", 0, 18, 0, 0, 2, 20
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\AdminUsersPage.css", "PostCSS", 0, 0, 385, 0, 75, 460
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\AdminUsersPage.jsx", "JavaScript JSX", 0, 777, 0, 0, 76, 853
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\CreateThreadPage.css", "PostCSS", 0, 0, 99, 0, 20, 119
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\CreateThreadPage.jsx", "JavaScript JSX", 0, 129, 0, 0, 18, 147
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ForgotPasswordPage.css", "PostCSS", 0, 0, 11, 0, 3, 14
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ForgotPasswordPage.jsx", "JavaScript JSX", 0, 58, 0, 0, 11, 69
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\HomePage.css", "PostCSS", 0, 0, 203, 0, 38, 241
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\HomePage.jsx", "JavaScript JSX", 0, 385, 0, 0, 33, 418
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\LandingPage.css", "PostCSS", 0, 0, 156, 0, 27, 183
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\LandingPage.jsx", "JavaScript JSX", 0, 136, 0, 0, 12, 148
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\LoginPage.css", "PostCSS", 0, 0, 121, 0, 22, 143
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\LoginPage.jsx", "JavaScript JSX", 0, 166, 0, 0, 24, 190
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\MapPage.css", "PostCSS", 0, 0, 606, 0, 124, 730
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\MapPage.jsx", "JavaScript JSX", 0, 2010, 0, 0, 195, 2205
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\MyReportsPage.css", "PostCSS", 0, 0, 35, 0, 8, 43
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\MyReportsPage.jsx", "JavaScript JSX", 0, 105, 0, 0, 11, 116
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\NewsPage.css", "PostCSS", 0, 0, 64, 0, 13, 77
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\NewsPage.jsx", "JavaScript JSX", 0, 158, 0, 0, 26, 184
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ProfilePage.css", "PostCSS", 0, 0, 100, 0, 20, 120
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ProfilePage.jsx", "JavaScript JSX", 0, 276, 0, 0, 40, 316
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\RegisterPage.css", "PostCSS", 0, 0, 3, 0, 1, 4
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\RegisterPage.jsx", "JavaScript JSX", 0, 110, 0, 0, 17, 127
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ReportPage.css", "PostCSS", 0, 0, 5, 0, 1, 6
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ReportPage.jsx", "JavaScript JSX", 0, 100, 0, 0, 17, 117
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ResetPasswordPage.jsx", "JavaScript JSX", 0, 94, 0, 0, 14, 108
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\TeacherRegisterPage.jsx", "JavaScript JSX", 0, 81, 0, 0, 13, 94
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ThreadDetailsPage.css", "PostCSS", 0, 0, 257, 0, 42, 299
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ThreadDetailsPage.jsx", "JavaScript JSX", 0, 789, 0, 0, 101, 890
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ThreadsListPage.css", "PostCSS", 0, 0, 174, 0, 36, 210
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ThreadsListPage.jsx", "JavaScript JSX", 0, 205, 0, 0, 28, 233
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\UserProfilePage.css", "PostCSS", 0, 0, 73, 0, 15, 88
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\UserProfilePage.jsx", "JavaScript JSX", 0, 178, 0, 0, 19, 197
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\routes\ProtectedRoute.jsx", "JavaScript JSX", 0, 17, 0, 0, 6, 23
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\utils\formatDateTime.js", "JavaScript", 13, 0, 0, 0, 1, 14
+"c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\utils\localize.js", "JavaScript", 33, 0, 0, 0, 6, 39
+"Total", "-", 133, 6381, 2982, 3, 1321, 10820

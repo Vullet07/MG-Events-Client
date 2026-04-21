@@ -1,27 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/api";
-import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import "./CreateThreadPage.css";
 
-const TITLE_SUGGESTIONS = [
-  "Счупено осветление в коридора на втория етаж",
-  "Хлъзгава настилка пред голямата сграда",
-  "Проблем с отоплението в кабинет 214",
-  "Шум и струпване пред столовата в голямото междучасие"
-];
-
 export default function CreateThreadPage() {
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const toast = useToast();
   const navigate = useNavigate();
-  const canPublishNews = user?.role === "Admin" || user?.role === "Teacher";
 
   useEffect(() => {
     const prefilledTitle = searchParams.get("title");
@@ -30,25 +20,28 @@ export default function CreateThreadPage() {
     }
   }, [searchParams]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
 
-    if (!title.trim()) {
+    const normalizedTitle = title.trim();
+
+    if (!normalizedTitle) {
       setError("Заглавието е задължително.");
       return;
     }
 
-    if (/^\s*\[news\]\b/i.test(title) && !canPublishNews) {
-      setError("Само учители и администратори могат да публикуват новини.");
+    if (/^\s*\[(news|новина)\]\b/i.test(normalizedTitle)) {
+      setError("Новините се публикуват само от секцията „Новини“.");
       return;
     }
 
     setLoading(true);
+
     try {
-      const res = await api.post("/forum-threads", { title: title.trim() });
+      const response = await api.post("/forum-threads", { title: normalizedTitle });
       toast?.success("Темата е създадена успешно.");
-      navigate(`/threads/${res.data.id}`);
+      navigate(`/threads/${response.data.id}`);
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || "Неуспешно създаване на тема.");
     } finally {
@@ -61,31 +54,31 @@ export default function CreateThreadPage() {
       <section className="card card-pad create-thread-hero">
         <div className="create-thread-hero__copy">
           <p className="create-thread-eyebrow">Форум • MG Events</p>
-          <h2 className="section-title">Създай тема, която другите ще разберат от пръв поглед</h2>
+          <h2 className="section-title">Създай тема, която веднага казва какъв е казусът</h2>
           <p className="section-subtitle">
-            Добре формулираното заглавие помага на ученици, учители и администратори в
-            МГ &quot;Академик Кирил Попов&quot; по-бързо да открият проблема и да се включат в дискусията.
+            Ясното заглавие помага на ученици, учители и администратори в МГ &quot;Академик Кирил
+            Попов&quot; по-бързо да открият темата, да я обсъдят и да стигнат до решение.
           </p>
 
           <div className="create-thread-hero__chips">
             <span className="pill">Кратко и конкретно</span>
-            <span className="pill">Лесно за търсене</span>
-            <span className="pill">Подходящо за форум и сигнали</span>
+            <span className="pill">Подходящо за търсене</span>
+            <span className="pill">Ясен проблем и локация</span>
           </div>
         </div>
 
         <div className="create-thread-hero__tips">
           <article>
-            <strong>Какво работи добре</strong>
-            <p>Използвай място, проблем и контекст в едно заглавие.</p>
+            <strong>Какво работи най-добре</strong>
+            <p>Напиши проблема, мястото и при нужда кратък контекст още в заглавието.</p>
           </article>
           <article>
-            <strong>Примерен формат</strong>
-            <p>Проблем + локация + кратка последица.</p>
+            <strong>Добър пример</strong>
+            <p>„Опасно хлъзгав под пред малката сграда при дъжд“.</p>
           </article>
           <article>
-            <strong>Подсказка</strong>
-            <p>Ако темата е по сигнал от картата, можеш да я стартираш и само с едно ясно заглавие.</p>
+            <strong>Полезен ориентир</strong>
+            <p>Темата трябва да е разбираема и за хора, които я виждат за първи път.</p>
           </article>
         </div>
       </section>
@@ -94,7 +87,7 @@ export default function CreateThreadPage() {
         <div className="split-row create-thread-card__header">
           <div>
             <h3>Нова тема</h3>
-            <p className="muted">В момента за темата е нужно само заглавие.</p>
+            <p className="muted">В момента е необходимо само заглавие, за да публикуваш темата.</p>
           </div>
           <span className="pill">{title.trim().length} символа</span>
         </div>
@@ -107,32 +100,14 @@ export default function CreateThreadPage() {
             <input
               className="input"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(event) => setTitle(event.target.value)}
               placeholder="Пример: Опасна пешеходна пътека до училището"
             />
           </label>
 
-          <div className="create-thread-suggestions">
-            <span>Бързи идеи:</span>
-            <div className="create-thread-suggestions__list">
-              {TITLE_SUGGESTIONS.map((suggestion) => (
-                <button
-                  key={suggestion}
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => setTitle(suggestion)}
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
+          <div className="create-thread-note">
+            Използвай заглавие, което веднага подсказва какъв е проблемът и къде се намира.
           </div>
-
-          {!canPublishNews && (
-            <div className="create-thread-note">
-              Ако започнеш заглавието с `[News]`, темата ще се третира като новина, а това е достъпно само за учители и администратори.
-            </div>
-          )}
 
           <div className="create-thread-actions">
             <button className="btn btn-primary" type="submit" disabled={loading}>

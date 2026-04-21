@@ -1,0 +1,82 @@
+Date : 2026-04-02 12:54:22
+Directory : c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src
+Total : 47 files,  9496 codes, 3 comments, 1321 blanks, all 10820 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| JavaScript JSX |         26 |      6,381 |          0 |        732 |      7,113 |
+| PostCSS        |         17 |      2,982 |          0 |        563 |      3,545 |
+| JavaScript     |          4 |        133 |          3 |         26 |        162 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                                    | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                                       |         47 |      9,496 |          3 |      1,321 |     10,820 |
+| . (Files)                                                                                                               |          3 |        521 |          0 |         85 |        606 |
+| api                                                                                                                     |          2 |         87 |          3 |         19 |        109 |
+| components                                                                                                              |          5 |        585 |          0 |         75 |        660 |
+| components (Files)                                                                                                      |          2 |        533 |          0 |         69 |        602 |
+| components\ui                                                                                                           |          3 |         52 |          0 |          6 |         58 |
+| context                                                                                                                 |          2 |        191 |          0 |         29 |        220 |
+| pages                                                                                                                   |         32 |      8,049 |          0 |      1,100 |      9,149 |
+| routes                                                                                                                  |          1 |         17 |          0 |          6 |         23 |
+| utils                                                                                                                   |          2 |         46 |          0 |          7 |         53 |
++-------------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                                                                                | language       | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\App.jsx                       | JavaScript JSX |         66 |          0 |          6 |         72 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\api\api.js                    | JavaScript     |         71 |          3 |         14 |         88 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\api\authApi.js                | JavaScript     |         16 |          0 |          5 |         21 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\components\AppShell.css       | PostCSS        |        253 |          0 |         41 |        294 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\components\AppShell.jsx       | JavaScript JSX |        280 |          0 |         28 |        308 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\components\ui\AppLoader.jsx   | JavaScript JSX |         13 |          0 |          2 |         15 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\components\ui\EmptyState.jsx  | JavaScript JSX |         27 |          0 |          2 |         29 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\components\ui\Skeleton.jsx    | JavaScript JSX |         12 |          0 |          2 |         14 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\context\AuthContext.jsx       | JavaScript JSX |        110 |          0 |         17 |        127 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\context\ToastContext.jsx      | JavaScript JSX |         81 |          0 |         12 |         93 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\index.css                     | PostCSS        |        437 |          0 |         77 |        514 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\main.jsx                      | JavaScript JSX |         18 |          0 |          2 |         20 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\AdminUsersPage.css      | PostCSS        |        385 |          0 |         75 |        460 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\AdminUsersPage.jsx      | JavaScript JSX |        777 |          0 |         76 |        853 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\CreateThreadPage.css    | PostCSS        |         99 |          0 |         20 |        119 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\CreateThreadPage.jsx    | JavaScript JSX |        129 |          0 |         18 |        147 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ForgotPasswordPage.css  | PostCSS        |         11 |          0 |          3 |         14 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ForgotPasswordPage.jsx  | JavaScript JSX |         58 |          0 |         11 |         69 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\HomePage.css            | PostCSS        |        203 |          0 |         38 |        241 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\HomePage.jsx            | JavaScript JSX |        385 |          0 |         33 |        418 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\LandingPage.css         | PostCSS        |        156 |          0 |         27 |        183 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\LandingPage.jsx         | JavaScript JSX |        136 |          0 |         12 |        148 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\LoginPage.css           | PostCSS        |        121 |          0 |         22 |        143 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\LoginPage.jsx           | JavaScript JSX |        166 |          0 |         24 |        190 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\MapPage.css             | PostCSS        |        606 |          0 |        124 |        730 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\MapPage.jsx             | JavaScript JSX |      2,010 |          0 |        195 |      2,205 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\MyReportsPage.css       | PostCSS        |         35 |          0 |          8 |         43 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\MyReportsPage.jsx       | JavaScript JSX |        105 |          0 |         11 |        116 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\NewsPage.css            | PostCSS        |         64 |          0 |         13 |         77 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\NewsPage.jsx            | JavaScript JSX |        158 |          0 |         26 |        184 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ProfilePage.css         | PostCSS        |        100 |          0 |         20 |        120 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ProfilePage.jsx         | JavaScript JSX |        276 |          0 |         40 |        316 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\RegisterPage.css        | PostCSS        |          3 |          0 |          1 |          4 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\RegisterPage.jsx        | JavaScript JSX |        110 |          0 |         17 |        127 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ReportPage.css          | PostCSS        |          5 |          0 |          1 |          6 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ReportPage.jsx          | JavaScript JSX |        100 |          0 |         17 |        117 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ResetPasswordPage.jsx   | JavaScript JSX |         94 |          0 |         14 |        108 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\TeacherRegisterPage.jsx | JavaScript JSX |         81 |          0 |         13 |         94 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ThreadDetailsPage.css   | PostCSS        |        257 |          0 |         42 |        299 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ThreadDetailsPage.jsx   | JavaScript JSX |        789 |          0 |        101 |        890 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ThreadsListPage.css     | PostCSS        |        174 |          0 |         36 |        210 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\ThreadsListPage.jsx     | JavaScript JSX |        205 |          0 |         28 |        233 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\UserProfilePage.css     | PostCSS        |         73 |          0 |         15 |         88 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\pages\UserProfilePage.jsx     | JavaScript JSX |        178 |          0 |         19 |        197 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\routes\ProtectedRoute.jsx     | JavaScript JSX |         17 |          0 |          6 |         23 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\utils\formatDateTime.js       | JavaScript     |         13 |          0 |          1 |         14 |
+| c:\Users\Vasko_TUF\Desktop\Programming projects\MG Events Frontend\mg-events-frontend\src\utils\localize.js             | JavaScript     |         33 |          0 |          6 |         39 |
+| Total                                                                                                                   |                |      9,496 |          3 |      1,321 |     10,820 |
++-------------------------------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+

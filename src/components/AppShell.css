@@ -54,6 +54,9 @@
   gap: 8px;
   align-content: start;
   margin-top: 20px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .side-nav__link {
@@ -102,6 +105,7 @@
   padding: 12px;
   display: grid;
   gap: 12px;
+  align-self: end;
 }
 
 .side-user__identity {
