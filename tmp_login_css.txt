@@ -1,16 +1,27 @@
 ﻿.login-layout {
   min-height: 0;
-  max-width: 1220px;
+  max-width: 1140px;
   margin: clamp(16px, 4vh, 42px) auto;
-  grid-template-columns: minmax(340px, 1.08fr) minmax(360px, 0.92fr);
+  grid-template-columns: minmax(300px, 1.02fr) minmax(360px, 0.98fr);
   align-items: start;
-  gap: 18px;
+  gap: 14px;
 }
 
 .login-panel {
   min-height: 0;
   align-content: start;
-  gap: 16px;
+  gap: 12px;
+}
+
+.login-brand {
+  width: min(100%, 248px);
+}
+
+.login-brand img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 18px 28px rgba(70, 0, 10, 0.26));
 }
 
 .auth-panel .pill {
@@ -124,7 +135,7 @@
 
 @media (max-width: 1040px) {
   .login-layout {
-    max-width: 820px;
+    max-width: 760px;
     grid-template-columns: 1fr;
     margin: 14px auto;
   }
@@ -135,10 +146,6 @@
 }
 
 @media (max-width: 640px) {
-  .login-layout {
-    gap: 12px;
-  }
-
   .login-panel__stats,
   .login-card__links {
     grid-template-columns: 1fr;

@@ -17,6 +17,49 @@
   flex-wrap: wrap;
 }
 
+.thread-delete-action {
+  position: relative;
+}
+
+.thread-delete-confirm,
+.post-actions-confirm {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fff7ed;
+  border: 1px solid rgba(217, 119, 6, 0.18);
+  box-shadow: 0 14px 30px rgba(85, 17, 29, 0.12);
+}
+
+.thread-delete-confirm {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(320px, 86vw);
+  z-index: 20;
+}
+
+.thread-delete-confirm strong,
+.post-actions-confirm strong {
+  color: #7c2d12;
+  font-size: 0.92rem;
+}
+
+.thread-delete-confirm span,
+.post-actions-confirm span {
+  color: #7c2d12;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.thread-delete-confirm__actions,
+.post-actions-confirm__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .thread-toolbar {
   display: flex;
   gap: 8px;
@@ -191,7 +234,8 @@
   right: 0;
   top: 34px;
   display: grid;
-  min-width: 130px;
+  min-width: 180px;
+  max-width: min(320px, 88vw);
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #fff;
@@ -212,6 +256,10 @@
 
 .post-actions-item:hover {
   background: #fff1f3;
+}
+
+.post-actions-confirm {
+  margin: 6px;
 }
 
 .reply-form {
@@ -295,4 +343,13 @@
     align-items: flex-start;
   }
 
+  .thread-delete-action {
+    width: 100%;
+  }
+
+  .thread-delete-confirm {
+    position: static;
+    width: 100%;
+    margin-top: 8px;
+  }
 }

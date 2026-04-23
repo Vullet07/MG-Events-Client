@@ -71,6 +71,12 @@
   margin: 0;
 }
 
+.profile-input-hint {
+  margin: -2px 0 2px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .profile-tabs {
   display: flex;
   gap: 6px;

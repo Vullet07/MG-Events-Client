@@ -210,10 +210,8 @@ export default function AppShell() {
     <div className={`app-shell ${sidebarOpen ? "sidebar-open" : ""}`}>
       <aside className="app-sidebar">
         <div className="brand-block">
-          <div className="brand-mark">MG</div>
-          <div>
-            <p className="brand-title">MG Events</p>
-            <p className="brand-subtitle">МГ "Академик Кирил Попов" - Пловдив</p>
+          <div className="brand-logo-shell">
+            <img className="brand-logo" src="/mg-events-mark.png" alt="MG Events" />
           </div>
         </div>
 

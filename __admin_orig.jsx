@@ -26,13 +26,6 @@ export default function AdminUsersPage() {
   const [moderationFilter, setModerationFilter] = useState("all");
   const [gradeFilter, setGradeFilter] = useState("all");
   const [sortBy, setSortBy] = useState("username");
-  const [reportSearch, setReportSearch] = useState("");
-  const [reportStatusFilter, setReportStatusFilter] = useState("all");
-  const [reportTargetFilter, setReportTargetFilter] = useState("all");
-  const [reportSortBy, setReportSortBy] = useState("status");
-  const [teacherSearch, setTeacherSearch] = useState("");
-  const [teacherStatusFilter, setTeacherStatusFilter] = useState("all");
-  const [teacherSortBy, setTeacherSortBy] = useState("status");
 
   const [activeSection, setActiveSection] = useState("users");
   const [banUntil, setBanUntil] = useState({});
@@ -70,7 +63,7 @@ export default function AdminUsersPage() {
 
     try {
       setLoadingReports(true);
-      const res = await api.get("/reports", { params: { sort: reportSortBy } });
+      const res = await api.get("/reports");
       setReports(res.data || []);
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || "Неуспешно зареждане на сигналите.");
@@ -87,7 +80,7 @@ export default function AdminUsersPage() {
 
     try {
       setLoadingTeacherRequests(true);
-      const res = await api.get("/user/teacher-requests", { params: { sort: teacherSortBy } });
+      const res = await api.get("/user/teacher-requests");
       setTeacherRequests(res.data || []);
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || "Неуспешно зареждане на учителските заявки.");
@@ -128,16 +121,6 @@ export default function AdminUsersPage() {
     fetchPinReport(pinReportMonth);
   }, [isAdmin, pinReportMonth]);
 
-  useEffect(() => {
-    if (!isAdmin) return;
-    fetchReports();
-  }, [isAdmin, reportSortBy]);
-
-  useEffect(() => {
-    if (!isAdmin) return;
-    fetchTeacherRequests();
-  }, [isAdmin, teacherSortBy]);
-
   const visibleUsers = useMemo(() => {
     const normalizedQuery = search.trim().toLowerCase();
     const filtered = users.filter((entry) => {
@@ -172,51 +155,6 @@ export default function AdminUsersPage() {
       return String(a.username || "").localeCompare(String(b.username || ""), "bg");
     });
   }, [users, search, roleFilter, moderationFilter, gradeFilter, sortBy, currentUser?.id]);
-
-  const visibleReports = useMemo(() => {
-    const normalizedQuery = reportSearch.trim().toLowerCase();
-    const filtered = reports.filter((report) => {
-      if (reportStatusFilter !== "all" && String(report.status) !== reportStatusFilter) return false;
-      if (reportTargetFilter !== "all" && String(report.targetType) !== reportTargetFilter) return false;
-
-      if (normalizedQuery) {
-        const haystack = `${report.targetLabel || ""} ${report.reason || ""} ${report.details || ""} ${report.reporterUsername || ""} ${report.contextLabel || ""}`.toLowerCase();
-        if (!haystack.includes(normalizedQuery)) return false;
-      }
-
-      return true;
-    });
-
-    return [...filtered].sort((a, b) => {
-      if (reportSortBy === "newest") return new Date(b.createdAt) - new Date(a.createdAt);
-      if (reportSortBy === "oldest") return new Date(a.createdAt) - new Date(b.createdAt);
-      if (reportSortBy === "target") return String(a.targetType || "").localeCompare(String(b.targetType || ""), "bg");
-      if (reportSortBy === "reporter") return String(a.reporterUsername || "").localeCompare(String(b.reporterUsername || ""), "bg");
-      return String(a.status || "").localeCompare(String(b.status || ""), "bg") || (new Date(b.createdAt) - new Date(a.createdAt));
-    });
-  }, [reports, reportSearch, reportStatusFilter, reportTargetFilter, reportSortBy]);
-
-  const visibleTeacherRequests = useMemo(() => {
-    const normalizedQuery = teacherSearch.trim().toLowerCase();
-    const filtered = teacherRequests.filter((request) => {
-      if (teacherStatusFilter !== "all" && String(request.status) !== teacherStatusFilter) return false;
-
-      if (normalizedQuery) {
-        const haystack = `${request.username || ""} ${request.email || ""} ${request.motivation || ""}`.toLowerCase();
-        if (!haystack.includes(normalizedQuery)) return false;
-      }
-
-      return true;
-    });
-
-    return [...filtered].sort((a, b) => {
-      if (teacherSortBy === "newest") return new Date(b.createdAt) - new Date(a.createdAt);
-      if (teacherSortBy === "oldest") return new Date(a.createdAt) - new Date(b.createdAt);
-      if (teacherSortBy === "username") return String(a.username || "").localeCompare(String(b.username || ""), "bg");
-      if (teacherSortBy === "email") return String(a.email || "").localeCompare(String(b.email || ""), "bg");
-      return String(a.status || "").localeCompare(String(b.status || ""), "bg") || (new Date(b.createdAt) - new Date(a.createdAt));
-    });
-  }, [teacherRequests, teacherSearch, teacherStatusFilter, teacherSortBy]);
 
   const handleBan = async (userId) => {
     setError("");
@@ -387,33 +325,6 @@ export default function AdminUsersPage() {
     setSortBy("username");
   };
 
-  const clearReportFilters = () => {
-    setReportSearch("");
-    setReportStatusFilter("all");
-    setReportTargetFilter("all");
-    setReportSortBy("status");
-  };
-
-  const clearTeacherFilters = () => {
-    setTeacherSearch("");
-    setTeacherStatusFilter("all");
-    setTeacherSortBy("status");
-  };
-
-  const clearActiveFilters = () => {
-    if (activeSection === "reports") {
-      clearReportFilters();
-      return;
-    }
-
-    if (activeSection === "teachers") {
-      clearTeacherFilters();
-      return;
-    }
-
-    clearUserFilters();
-  };
-
   const handleDownloadPinReport = async () => {
     try {
       const response = await api.get("/event-pins/reports/monthly/export", {
@@ -467,109 +378,39 @@ export default function AdminUsersPage() {
 
       <section className="card card-pad admin-toolbar">
         <div className="admin-toolbar__filters">
-          {activeSection === "reports" ? (
-            <>
-              <input
-                className="input"
-                placeholder="Търсене по сигнал, автор или съдържание"
-                value={reportSearch}
-                onChange={(event) => setReportSearch(event.target.value)}
-              />
-              <select value={reportStatusFilter} onChange={(event) => setReportStatusFilter(event.target.value)}>
-                <option value="all">Всички статуси</option>
-                <option value="Open">Отворени</option>
-                <option value="Reviewed">Прегледани</option>
-                <option value="Dismissed">Отхвърлени</option>
-              </select>
-              <select value={reportTargetFilter} onChange={(event) => setReportTargetFilter(event.target.value)}>
-                <option value="all">Всички типове</option>
-                <option value="User">Потребители</option>
-                <option value="Thread">Теми</option>
-                <option value="Post">Публикации</option>
-                <option value="Pin">Пинове</option>
-              </select>
-              <select value={reportSortBy} onChange={(event) => setReportSortBy(event.target.value)}>
-                <option value="status">По статус</option>
-                <option value="newest">Най-нови първо</option>
-                <option value="oldest">Най-стари първо</option>
-                <option value="target">По тип съдържание</option>
-                <option value="reporter">По подател</option>
-              </select>
-            </>
-          ) : activeSection === "teachers" ? (
-            <>
-              <input
-                className="input"
-                placeholder="Търсене по име, имейл или мотивация"
-                value={teacherSearch}
-                onChange={(event) => setTeacherSearch(event.target.value)}
-              />
-              <select value={teacherStatusFilter} onChange={(event) => setTeacherStatusFilter(event.target.value)}>
-                <option value="all">Всички статуси</option>
-                <option value="Pending">Чакащи</option>
-                <option value="Approved">Одобрени</option>
-                <option value="Rejected">Отказани</option>
-              </select>
-              <select value={teacherSortBy} onChange={(event) => setTeacherSortBy(event.target.value)}>
-                <option value="status">По статус</option>
-                <option value="newest">Най-нови първо</option>
-                <option value="oldest">Най-стари първо</option>
-                <option value="username">По потребителско име</option>
-                <option value="email">По имейл</option>
-              </select>
-            </>
-          ) : activeSection === "stats" ? (
-            <>
-              <input
-                className="input"
-                type="month"
-                value={pinReportMonth}
-                onChange={(event) => setPinReportMonth(event.target.value)}
-              />
-              <button className="btn btn-secondary btn-sm" type="button" onClick={() => fetchPinReport(pinReportMonth)}>
-                Обнови
-              </button>
-              <button className="btn btn-primary btn-sm" type="button" onClick={handleDownloadPinReport}>
-                Изтегли Word
-              </button>
-            </>
-          ) : (
-            <>
-              <input
-                className="input"
-                placeholder="Търсене по име, имейл, роля или клас"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-              <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
-                <option value="all">Всички роли</option>
-                <option value="Student">Ученици</option>
-                {!isTeacher && <option value="Teacher">Учители</option>}
-                {!isTeacher && <option value="Admin">Администратори</option>}
-              </select>
-              <select value={moderationFilter} onChange={(event) => setModerationFilter(event.target.value)}>
-                <option value="all">Всички статуси</option>
-                <option value="active">Активни</option>
-                <option value="banned">Блокирани</option>
-                <option value="expiring">С предстоящо изтичане</option>
-                <option value="protected">Защитени профили</option>
-              </select>
-              <select value={gradeFilter} onChange={(event) => setGradeFilter(event.target.value)}>
-                <option value="all">Всички класове</option>
-                {gradeOptions.map((grade) => (
-                  <option key={grade} value={grade}>
-                    {grade} клас
-                  </option>
-                ))}
-              </select>
-              <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-                <option value="username">Сортиране по име</option>
-                <option value="role">Сортиране по роля</option>
-                <option value="grade">Сортиране по клас</option>
-                <option value="scheduledDeletion">По дата на деактивиране</option>
-              </select>
-            </>
-          )}
+          <input
+            className="input"
+            placeholder="Търсене по име, имейл, роля или клас"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
+            <option value="all">Всички роли</option>
+            <option value="Student">Ученици</option>
+            {!isTeacher && <option value="Teacher">Учители</option>}
+            {!isTeacher && <option value="Admin">Администратори</option>}
+          </select>
+          <select value={moderationFilter} onChange={(event) => setModerationFilter(event.target.value)}>
+            <option value="all">Всички статуси</option>
+            <option value="active">Активни</option>
+            <option value="banned">Блокирани</option>
+            <option value="expiring">С предстоящо изтичане</option>
+            <option value="protected">Защитени профили</option>
+          </select>
+          <select value={gradeFilter} onChange={(event) => setGradeFilter(event.target.value)}>
+            <option value="all">Всички класове</option>
+            {gradeOptions.map((grade) => (
+              <option key={grade} value={grade}>
+                {grade} клас
+              </option>
+            ))}
+          </select>
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+            <option value="username">Сортиране по име</option>
+            <option value="role">Сортиране по роля</option>
+            <option value="grade">Сортиране по клас</option>
+            <option value="scheduledDeletion">По дата на деактивиране</option>
+          </select>
         </div>
 
         <div className="admin-toolbar__side">
@@ -609,11 +450,9 @@ export default function AdminUsersPage() {
             )}
           </div>
 
-          {activeSection !== "stats" && (
-            <button type="button" className="btn btn-secondary btn-sm" onClick={clearActiveFilters}>
-              Изчисти филтрите
-            </button>
-          )}
+          <button type="button" className="btn btn-secondary btn-sm" onClick={clearUserFilters}>
+            Изчисти филтрите
+          </button>
         </div>
       </section>
 
@@ -760,19 +599,19 @@ export default function AdminUsersPage() {
         <section className="admin-list">
           <section className="card card-pad admin-list-head">
             <h3>Заявки за регистрация на учители</h3>
-            <span className="pill">{visibleTeacherRequests.length}</span>
+            <span className="pill">{teacherRequests.length}</span>
           </section>
 
           {loadingTeacherRequests ? (
             <article className="card card-pad admin-list-item admin-list-item--stacked">
               <p className="muted">Зареждаме заявките...</p>
             </article>
-          ) : visibleTeacherRequests.length === 0 ? (
+          ) : teacherRequests.length === 0 ? (
             <article className="card card-pad admin-list-item admin-list-item--stacked">
               <p className="muted">Няма подадени учителски заявки.</p>
             </article>
           ) : (
-            visibleTeacherRequests.map((request) => (
+            teacherRequests.map((request) => (
               <article key={request.id} className="card card-pad admin-list-item admin-list-item--stacked">
                 <div>
                   <div className="admin-list-item__title-row">
@@ -804,19 +643,19 @@ export default function AdminUsersPage() {
         <section className="admin-list">
           <section className="card card-pad admin-list-head">
             <h3>Сигнали за модерация</h3>
-            <span className="pill">{visibleReports.length}</span>
+            <span className="pill">{reports.length}</span>
           </section>
 
           {loadingReports ? (
             <article className="card card-pad admin-list-item admin-list-item--stacked">
               <p className="muted">Зареждаме сигналите...</p>
             </article>
-          ) : visibleReports.length === 0 ? (
+          ) : reports.length === 0 ? (
             <article className="card card-pad admin-list-item admin-list-item--stacked">
               <p className="muted">Все още няма подадени сигнали.</p>
             </article>
           ) : (
-            visibleReports.map((report) => (
+            reports.map((report) => (
               <article key={report.id} className="card card-pad admin-list-item admin-list-item--stacked admin-report-card">
                 <div className="admin-report-card__head">
                   <div>

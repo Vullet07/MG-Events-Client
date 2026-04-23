@@ -103,6 +103,12 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const refreshUser = async () => {
+    const res = await api.get("/auth/me");
+    setUser(res.data);
+    return res.data;
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
@@ -114,6 +120,7 @@ export function AuthProvider({ children }) {
         user,
         isAuthenticated: !!user,
         login,
+        refreshUser,
         logout,
         loading
       }}

@@ -50,6 +50,7 @@ export default function ThreadDetailsPage() {
 
   const [postSort, setPostSort] = useState("newest");
   const [highlightPostId, setHighlightPostId] = useState(null);
+  const [deleteDialog, setDeleteDialog] = useState(null);
   const [loadingThread, setLoadingThread] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -173,6 +174,17 @@ export default function ThreadDetailsPage() {
 
     return () => window.clearTimeout(timeoutId);
   }, [posts, searchParams]);
+
+  useEffect(() => {
+    if (!deleteDialog) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && !loading) setDeleteDialog(null);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [deleteDialog, loading]);
 
   const sortedPosts = useMemo(() => {
     return [...posts].sort((a, b) => {
@@ -351,18 +363,50 @@ export default function ThreadDetailsPage() {
     }
   };
 
-  const handleDeleteThread = async () => {
-    if (!window.confirm("Сигурен ли си, че искаш да изтриеш тази тема?")) return;
+  const requestDeleteThread = () => {
+    setDeleteDialog({
+      type: "thread",
+      title: thread?.title || "тази тема"
+    });
+  };
 
+  const requestDeletePost = (post) => {
+    setOpenActionsPostId(post.id);
+    setDeleteDialog({
+      type: "post",
+      postId: post.id,
+      title: post.title || post.content?.slice(0, 70) || "тази публикация"
+    });
+  };
+
+  const closeDeleteDialog = () => {
+    if (!loading) setDeleteDialog(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteDialog) return;
     setLoading(true);
     setError("");
 
     try {
-      await api.delete(`/forum-threads/${id}`);
-      toast?.success("Темата е изтрита.");
-      navigate(isNewsThread ? "/news" : "/threads");
+      if (deleteDialog.type === "thread") {
+        await api.delete(`/forum-threads/${id}`);
+        setDeleteDialog(null);
+        toast?.success("Темата е изтрита.");
+        navigate(isNewsThread ? "/news" : "/threads");
+        return;
+      }
+
+      await api.delete(`/ForumPosts/${deleteDialog.postId}`);
+      setPosts((prev) => prev.filter((post) => post.id !== deleteDialog.postId));
+      resetPostEditor();
+      setDeleteDialog(null);
+      toast?.success("Публикацията е изтрита.");
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || "Неуспешно изтриване на темата.");
+      const fallback = deleteDialog.type === "thread"
+        ? "Неуспешно изтриване на темата."
+        : "Неуспешно изтриване на публикацията.";
+      setError(err?.response?.data?.message || err?.message || fallback);
     } finally {
       setLoading(false);
     }
@@ -390,24 +434,6 @@ export default function ThreadDetailsPage() {
       toast?.success("Публикацията е обновена.");
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || "Неуспешно обновяване на публикацията.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeletePost = async (postId) => {
-    if (!window.confirm("Сигурен ли си, че искаш да изтриеш тази публикация?")) return;
-
-    setLoading(true);
-    setError("");
-
-    try {
-      await api.delete(`/ForumPosts/${postId}`);
-      setPosts((prev) => prev.filter((post) => post.id !== postId));
-      resetPostEditor();
-      toast?.success("Публикацията е изтрита.");
-    } catch (err) {
-      setError(err?.response?.data?.message || err?.message || "Неуспешно изтриване на публикацията.");
     } finally {
       setLoading(false);
     }
@@ -562,13 +588,35 @@ export default function ThreadDetailsPage() {
                   <button
                     type="button"
                     className="post-actions-item"
-                    onClick={() => {
-                      setOpenActionsPostId(null);
-                      handleDeletePost(post.id);
-                    }}
+                    onClick={() => requestDeletePost(post)}
                   >
                     Изтрий
                   </button>
+                )}
+
+                {deleteDialog?.type === "post" && deleteDialog.postId === post.id && (
+                  <div className="post-actions-confirm">
+                    <strong>Изтриване на публикацията?</strong>
+                    <span>Това действие е необратимо.</span>
+                    <div className="post-actions-confirm__actions">
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        disabled={loading}
+                        onClick={confirmDelete}
+                      >
+                        {loading ? "Изтриване..." : "Да, изтрий"}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        disabled={loading}
+                        onClick={closeDeleteDialog}
+                      >
+                        Откажи
+                      </button>
+                    </div>
+                  </div>
                 )}
 
                 <Link
@@ -776,9 +824,35 @@ export default function ThreadDetailsPage() {
             </button>
           )}
           {canManageThread && (
-            <button className="btn btn-danger btn-sm" type="button" onClick={handleDeleteThread}>
-              Изтрий темата
-            </button>
+            <div className="thread-delete-action">
+              <button className="btn btn-danger btn-sm" type="button" onClick={requestDeleteThread}>
+                Изтрий темата
+              </button>
+              {deleteDialog?.type === "thread" && (
+                <div className="thread-delete-confirm">
+                  <strong>Изтриване на темата?</strong>
+                  <span>Темата и всички нейни публикации ще бъдат премахнати.</span>
+                  <div className="thread-delete-confirm__actions">
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      disabled={loading}
+                      onClick={confirmDelete}
+                    >
+                      {loading ? "Изтриване..." : "Да, изтрий"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      disabled={loading}
+                      onClick={closeDeleteDialog}
+                    >
+                      Откажи
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
           <Link
             className="btn btn-danger btn-sm"
@@ -884,6 +958,7 @@ export default function ThreadDetailsPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

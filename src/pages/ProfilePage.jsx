@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
-import api from "../api/api";
+import api, { getApiErrorMessage } from "../api/api";
 import { formatDateTime } from "../utils/formatDateTime";
 import { toBgRole } from "../utils/localize";
 import "./ProfilePage.css";
@@ -13,8 +13,10 @@ const initialTabs = {
   pins: { items: [], page: 1, totalPages: 1 }
 };
 
+const USERNAME_PATTERN = /^[A-Za-z0-9._-]+$/;
+
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
   const toast = useToast();
 
   const [profile, setProfile] = useState(null);
@@ -88,13 +90,21 @@ export default function ProfilePage() {
     try {
       if (!profile?.id) return;
 
-      let updatedProfile = profile;
+      const trimmedUsername = username.trim();
+      const usernameChanged = trimmedUsername && trimmedUsername !== profile.username;
 
-      if (username.trim() && username.trim() !== profile.username) {
-        const accountRes = await api.put(`/user/${profile.id}`, {
-          username: username.trim()
-        });
-        updatedProfile = accountRes.data;
+      if (trimmedUsername && !USERNAME_PATTERN.test(trimmedUsername)) {
+        const message = "Потребителското име може да съдържа само латински букви, цифри и символите . _ -.";
+        setStatusType("error");
+        setStatus(message);
+        toast?.error(message);
+        return;
+      }
+
+      if (!usernameChanged && !photoFile) {
+        setStatusType("success");
+        setStatus("Няма нови промени по профила.");
+        return;
       }
 
       if (photoFile) {
@@ -108,22 +118,29 @@ export default function ProfilePage() {
           setStatus("Снимката трябва да е до 5MB.");
           return;
         }
-
-        const formData = new FormData();
-        formData.append("file", photoFile);
-        const uploadRes = await api.post("/user/profile-photo", formData);
-        updatedProfile = uploadRes.data;
-        setPhotoFile(null);
-        setPhotoPreview("");
       }
 
+      const formData = new FormData();
+      if (usernameChanged) {
+        formData.append("Username", trimmedUsername);
+      }
+      if (photoFile) {
+        formData.append("File", photoFile);
+      }
+
+      const profileRes = await api.put("/user/profile", formData);
+      const updatedProfile = profileRes.data;
+
+      setPhotoFile(null);
+      setPhotoPreview("");
       setProfile(updatedProfile);
       setUsername(updatedProfile.username || username);
+      refreshUser?.().catch(() => {});
       setStatusType("success");
       setStatus("Данните по профила са обновени.");
       toast?.success("Профилът е обновен успешно.");
     } catch (err) {
-      const message = err?.response?.data?.message || err?.message || "Неуспешно обновяване на профила.";
+      const message = getApiErrorMessage(err, "Неуспешно обновяване на профила.");
       setStatusType("error");
       setStatus(message);
       toast?.error(message);
@@ -230,7 +247,9 @@ export default function ProfilePage() {
 
         <article className="card card-pad profile-editor">
           <h3>Данни за акаунта</h3>
-          <p className="muted">Обнови потребителско име и профилна снимка.</p>
+          <p className="muted">
+            Обнови потребителско име и профилна снимка. Можеш да правиш до 3 профилни промени за 24 часа.
+          </p>
 
           {status && (
             <p className={statusType === "error" ? "error-msg" : "success-msg"}>{status}</p>
@@ -243,6 +262,9 @@ export default function ProfilePage() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Потребителско име"
             />
+            <p className="profile-input-hint">
+              Разрешени символи: латински букви, цифри, точка, долна черта и тире.
+            </p>
 
             <input
               className="input"
